@@ -234,13 +234,16 @@ class Node(Printable, Registrable, Configurable, Vertex):
     __geo: Tuple[float,float,str] # (Latitude,Longitude,Address) -- optional parameter that contains the geographical location of the Node
     __note: str # optional parameter that contains a note about the Node
 
-    def __init__(self, name: str, role: NodeRole, asn: int, scope: str = None):
+    __gpuAccess: bool # flag parameter that enable GPU access
+
+    def __init__(self, name: str, role: NodeRole, asn: int, gpuAccess: bool = False, scope: str = None):
         """!
         @brief Node constructor.
 
         @name name name of this node.
         @param role role of this node.
         @param asn network that this node belongs to.
+        @param gpuAccess gpu access status
         @param scope scope of the node, if not asn.
         """
         super().__init__()
@@ -276,6 +279,8 @@ class Node(Printable, Registrable, Configurable, Vertex):
 
         self.__geo = None
         self.__note = None
+
+        self.__gpuAccess = gpuAccess
 
     def configure(self, emulator: Emulator):
         """!
@@ -432,6 +437,24 @@ class Node(Printable, Registrable, Configurable, Vertex):
         @returns True if privileged, False otherwise.
         """
         return self.__privileged
+
+    def setGPUAccess(self, gpuAccess: bool) -> Node:
+        """!
+        @brief Set or unset GPU devices access status of the node
+
+        @param gpuAccess set if node can access GPU devices.
+
+        @returns self, for chaining API calls.
+        """
+        self.__gpuAccess = gpuAccess
+
+    def getGPUAccess(self) -> bool:
+        """!
+        @brief get the GPU devices access status of the node 
+
+        @returns True if node can access GPU devices.
+        """
+        return self.__gpuAccess
 
     def setBaseSystem(self, base_system: BaseSystem) -> Node:
         """!

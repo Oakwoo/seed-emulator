@@ -123,6 +123,7 @@ DockerCompilerFileTemplates['compose_service'] = """\
     {nodeId}:
         build: ./{nodeId}
         container_name: {nodeName}
+{gpuAccess}
         depends_on:
             - {dependsOn}
         cap_add:
@@ -137,6 +138,17 @@ DockerCompilerFileTemplates['compose_service'] = """\
         labels:
 {labelList}
 """
+
+DockerCompilerFileTemplates['gpu_Access'] = """\
+        deploy:
+            resources:
+                reservations:
+                    devices:
+                        - driver: nvidia
+                          count: 1
+                          capabilities: [gpu]
+"""
+
 
 DockerCompilerFileTemplates['compose_label_meta'] = """\
             org.seedsecuritylabs.seedemu.meta.{key}: "{value}"
@@ -962,6 +974,7 @@ class Docker(Compiler):
         return DockerCompilerFileTemplates['compose_service'].format(
             nodeId = real_nodename,
             nodeName = name,
+            gpuAccess = DockerCompilerFileTemplates['gpu_Access'] if node.getGPUAccess() else '',
             dependsOn = md5(image.getName().encode('utf-8')).hexdigest(),
             networks = node_nets,
             # privileged = 'true' if node.isPrivileged() else 'false',
