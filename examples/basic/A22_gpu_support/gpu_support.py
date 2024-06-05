@@ -3,7 +3,7 @@
 
 from seedemu.layers import Base, Routing, Ebgp
 from seedemu.services import WebService
-from seedemu.compiler import Docker
+from seedemu.compiler import *
 from seedemu.core import Emulator, Binding, Filter
 
 def run(dumpfile = None):
@@ -64,8 +64,16 @@ def run(dumpfile = None):
     as152.createHost('web').joinNetwork('net0')
     web.install('web152')
     emu.addBinding(Binding('web152', filter = Filter(nodeName = 'web', asn = 152)))
-
-
+    gpuhost = as152.createHost('gpu', gpuAccess = True).joinNetwork('net0')
+    gpuhost.addSoftware('python3').addSoftware('python3-pip')
+    gpuhost.addBuildCommand("pip3 install torch && pip3 install numpy")
+    gpuhost.importFile(hostpath="/home/seed/Desktop/seed-emulator/examples/basic/A22_gpu_support/GPUTest.py", containerpath="/GPUTest.py").importFile(hostpath="/home/seed/Desktop/seed-emulator/examples/basic/A22_gpu_support/GPUTest_Time.py", containerpath="/GPUTest_Time.py")
+    
+    gpuhost2 = as152.createHost('gpu2', gpuAccess = True).joinNetwork('net0')
+    gpuhost2.addSoftware('python3').addSoftware('python3-pip')
+    gpuhost2.addBuildCommand("pip3 install torch && pip3 install numpy")
+    gpuhost2.importFile(hostpath="/home/seed/Desktop/seed-emulator/examples/basic/A22_gpu_support/GPUTest.py", containerpath="/GPUTest.py").importFile(hostpath="/home/seed/Desktop/seed-emulator/examples/basic/A22_gpu_support/GPUTest_Time.py", containerpath="/GPUTest_Time.py")
+    
     ###############################################################################
     # Peering these ASes at Internet Exchange IX-100
 
@@ -81,15 +89,22 @@ def run(dumpfile = None):
     emu.addLayer(routing)
     emu.addLayer(ebgp)
     emu.addLayer(web)
-
+    
     if dumpfile is not None:
         emu.dump(dumpfile)
     else:
         emu.render()
 
+        imageName = 'nvidia/cuda:12.3.1-base-ubuntu20.04'
+        image  = DockerImage(name=imageName, local=False, software=[])
+        docker = Docker()
+        docker.addImage(image)
+        docker.setImageOverride(gpuhost, imageName)
+        docker.setImageOverride(gpuhost2, imageName)
+
         ###############################################################################
         # Compilation
-        emu.compile(Docker(), './output', override=True)
+        emu.compile(docker, './output', override=True)
 
 if __name__ == '__main__':
     run()
