@@ -5,6 +5,7 @@ from seedemu.layers import Base, Routing, Ebgp
 from seedemu.services import WebService
 from seedemu.compiler import *
 from seedemu.core import Emulator, Binding, Filter
+import os
 
 def run(dumpfile = None):
     # Initialize the emulator and layers
@@ -64,15 +65,15 @@ def run(dumpfile = None):
     as152.createHost('web').joinNetwork('net0')
     web.install('web152')
     emu.addBinding(Binding('web152', filter = Filter(nodeName = 'web', asn = 152)))
-    gpuhost = as152.createHost('gpu', gpuAccess = True).joinNetwork('net0')
+    gpuhost = as152.createHost('gpu').setGPUAccess(True).joinNetwork('net0')
     gpuhost.addSoftware('python3').addSoftware('python3-pip')
     gpuhost.addBuildCommand("pip3 install torch && pip3 install numpy")
-    gpuhost.importFile(hostpath="/home/seed/Desktop/seed-emulator/examples/basic/A22_gpu_support/GPUTest.py", containerpath="/GPUTest.py").importFile(hostpath="/home/seed/Desktop/seed-emulator/examples/basic/A22_gpu_support/GPUTest_Time.py", containerpath="/GPUTest_Time.py")
+    gpuhost.importFile(hostpath = os.path.dirname(os.path.realpath(__file__)) + "/GPUTest.py", containerpath = "/GPUTest.py").importFile(hostpath = os.path.dirname(os.path.realpath(__file__)) + "/GPUTest_Time.py", containerpath = "/GPUTest_Time.py")
     
-    gpuhost2 = as152.createHost('gpu2', gpuAccess = True).joinNetwork('net0')
+    gpuhost2 = as152.createHost('gpu2').setGPUAccess(True).joinNetwork('net0')
     gpuhost2.addSoftware('python3').addSoftware('python3-pip')
     gpuhost2.addBuildCommand("pip3 install torch && pip3 install numpy")
-    gpuhost2.importFile(hostpath="/home/seed/Desktop/seed-emulator/examples/basic/A22_gpu_support/GPUTest.py", containerpath="/GPUTest.py").importFile(hostpath="/home/seed/Desktop/seed-emulator/examples/basic/A22_gpu_support/GPUTest_Time.py", containerpath="/GPUTest_Time.py")
+    gpuhost2.importFile(hostpath = os.path.dirname(os.path.realpath(__file__)) + "/GPUTest.py", containerpath = "/GPUTest.py").importFile(hostpath = os.path.dirname(os.path.realpath(__file__)) + "/GPUTest_Time.py", containerpath = "/GPUTest_Time.py")
     
     ###############################################################################
     # Peering these ASes at Internet Exchange IX-100

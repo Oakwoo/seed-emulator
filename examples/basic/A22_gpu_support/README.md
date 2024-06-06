@@ -5,10 +5,10 @@ In this example, we demonstrate how to create hosts which can access to GPU devi
 ## Create GPU-Enable Hosts
 The `AutonomousSystem::createHost` API takes two parameters, `name`,
 which is the name of the host, `gpuAccess`, whether hosts can access to GPU devices
- and it will return an `Node` instance on success. In this case, we will name our new host `gpu` and enable it access to GPU devices.
+ and it will return an `Node` instance on success. In this case, we will name our new host `gpu` and enable it access to GPU devices and connect it to the internal network net0.
  
  ```python
- gpuhost = as152.createHost('gpu', gpuAccess = True)
+ gpuhost = as152.createHost('gpu2').setGPUAccess(True).joinNetwork('net0')
  ```
 
 

@@ -236,14 +236,13 @@ class Node(Printable, Registrable, Configurable, Vertex):
 
     __gpuAccess: bool # flag parameter that enable GPU access
 
-    def __init__(self, name: str, role: NodeRole, asn: int, gpuAccess: bool = False, scope: str = None):
+    def __init__(self, name: str, role: NodeRole, asn: int, scope: str = None):
         """!
         @brief Node constructor.
 
         @name name name of this node.
         @param role role of this node.
         @param asn network that this node belongs to.
-        @param gpuAccess gpu access status
         @param scope scope of the node, if not asn.
         """
         super().__init__()
@@ -280,7 +279,7 @@ class Node(Printable, Registrable, Configurable, Vertex):
         self.__geo = None
         self.__note = None
 
-        self.__gpuAccess = gpuAccess
+        self.__gpuAccess = False
 
     def configure(self, emulator: Emulator):
         """!
@@ -447,6 +446,7 @@ class Node(Printable, Registrable, Configurable, Vertex):
         @returns self, for chaining API calls.
         """
         self.__gpuAccess = gpuAccess
+        return self
 
     def getGPUAccess(self) -> bool:
         """!
