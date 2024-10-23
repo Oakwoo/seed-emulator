@@ -41,10 +41,10 @@ emulator.
 from examples.internet.B00_mini_internet import mini_internet
 from examples.internet.B01_dns_component import dns_component
 
-mini_internet.run(dumpfile='./base-internet.bin')
+mini_internet.run(dumpfile='./base_internet.bin')
 dns_component.run(dumpfile='./dns-component.bin')
 
-emuA.load('./base-internet.bin')
+emuA.load('./base_internet.bin')
 emuB.load('./dns-component.bin')
 emu = emuA.merge(emuB, DEFAULT_MERGERS)
 ```
@@ -113,14 +113,10 @@ and node levels.
 
 ```
 # At the AS level
-base.getAutonomousSystem(160).setNameServers(['10.152.0.53'])
-base.getAutonomousSystem(170).setNameServers(['10.152.0.53'])
+global_dns_1.setNameServerOnNodesByAsns(asns=[160, 170])
 
 # At the emulator level
-base.setNameServers(['10.153.0.53'])
-
-# At the node level (not included in the example)
-node.setNameServers(['10.152.0.53'])
+global_dns_2.setNameServerOnAllNodes()
 ```
 
 
