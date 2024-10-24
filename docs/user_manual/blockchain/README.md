@@ -2,15 +2,20 @@
 
 ## Using the emulator
 
-  - [Connect MetaMask to SEED Emulator](./metamask.md)
-  - [Connect Remix to SEED Emulator](./remix.md)
+  - [Connect MetaMask to SEED emulator](./metamask.md)
+  - [Connect Remix to SEED emulator](./remix.md)
 
 ## Building an emulator
 
-  - [Build a Blockchain Emulator (POA)](./examples/D00-blockchain-poa/)
-  - [Create prefunded Ethereum accounts]()
-  - [Use Faucet to Fund Accounts](../../../examples/)
+  - [Build a blockchain emulator (POA)](../../../examples/blockchain/D00_ethereum_poa)
+  - [Funding accounts at build time](./accounts.md)
+  - [Use faucet to fund accounts](../../../examples/blockchain/D20_faucet)
+  - [Deploy contract](../../../examples/blockchain/D21_deploy_contract)
+  - [Use a server to share information among nodes](./info_server.md)
+
 
 ## Advanced features 
 
-  - [Use Chainlink to Get Information From Outside](../../../examples/)
+  - [Use Chainlink to get information From outside](../../../examples/blockchain/D31_chainlink)
+
+## [Common Problems](./common_problems.md)
