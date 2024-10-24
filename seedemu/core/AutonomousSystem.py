@@ -25,6 +25,7 @@ class AutonomousSystem(Printable, Graphable, Configurable):
     __subnets: List[IPv4Network]
     __routers: Dict[str, Node]
     __hosts: Dict[str, Node]
+    __ghosthosts: Dict[str, Node]
     __nets: Dict[str, Network]
 
     __name_servers: List[str]
@@ -38,6 +39,7 @@ class AutonomousSystem(Printable, Graphable, Configurable):
         """
         super().__init__()
         self.__hosts = {}
+        self.__ghosthosts = {}
         self.__routers = {}
         self.__nets = {}
         self.__asn = asn
@@ -113,6 +115,7 @@ class AutonomousSystem(Printable, Graphable, Configurable):
 
         for (key, val) in self.__nets.items(): reg.register(str(self.__asn), 'net', key, val)
         for (key, val) in self.__hosts.items(): reg.register(str(self.__asn), 'hnode', key, val)
+        for (key, val) in self.__ghosthosts.items(): reg.register(str(self.__asn), 'gnode', key, val)
         for (key, val) in self.__routers.items(): reg.register(str(self.__asn), 'rnode', key, val)
 
     def configure(self, emulator: Emulator):
@@ -273,6 +276,35 @@ class AutonomousSystem(Printable, Graphable, Configurable):
         @returns list of hosts.
         """
         return list(self.__hosts.keys())
+    
+    def createGhostHost(self, name: str) -> Node:
+        """!
+        @brief Create a ghost host node.
+
+        @param name name of the new node.
+        @returns Node.
+        """
+        assert name not in self.__ghosthosts, 'Ghost Host with name {} already exists.'.format(name)
+        self.__ghosthosts[name] = Node(name, NodeRole.Host, self.__asn)
+
+        return self.__ghosthosts[name]
+
+    def getGhostHost(self, name: str) -> Node:
+        """!
+        @brief Retrieve a ghost host node.
+
+        @param name name of the node.
+        @returns Node.
+        """
+        return self.__ghosthosts[name]
+
+    def getGhostHosts(self) -> List[str]:
+        """!
+        @brief Get list of name of ghost hosts.
+
+        @returns list of ghost hosts.
+        """
+        return list(self.__ghosthosts.keys())
 
     def _doCreateGraphs(self, emulator: Emulator):
         """!

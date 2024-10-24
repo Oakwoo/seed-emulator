@@ -3,7 +3,7 @@
 
 from seedemu.layers import Base, Routing, Ebgp
 from seedemu.services import WebService
-from seedemu.compiler import Docker
+from seedemu.compiler import Docker, GhostPrinter
 from seedemu.core import Emulator, Binding, Filter
 
 def run(dumpfile = None):
@@ -61,7 +61,7 @@ def run(dumpfile = None):
     as152.createNetwork('net0')
     as152.createRouter('router0').joinNetwork('net0').joinNetwork('ix100')
 
-    as152.createHost('web').joinNetwork('net0')
+    as152.createGhostHost('web').joinNetwork('net0')
     web.install('web152')
     emu.addBinding(Binding('web152', filter = Filter(nodeName = 'web', asn = 152)))
 
@@ -90,6 +90,7 @@ def run(dumpfile = None):
         ###############################################################################
         # Compilation
         emu.compile(Docker(), './output', override=True)
+        emu.compile(GhostPrinter(), './ghost', override=True)
 
 if __name__ == '__main__':
     run()

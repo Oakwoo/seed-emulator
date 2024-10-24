@@ -13,6 +13,8 @@ from string import ascii_letters
 from random import choice
 from .BaseSystem import BaseSystem
 
+import json
+
 DEFAULT_SOFTWARE: List[str] = ['zsh', 'curl', 'nano', 'vim-nox', 'mtr-tiny', 'iproute2', 'iputils-ping', 'tcpdump', 'termshark', 'dnsutils', 'jq', 'ipcalc', 'netcat']
 
 class File(Printable):
@@ -92,6 +94,15 @@ class File(Printable):
             out += line
             out += '\n'
         return out
+    
+    def printJson(self) -> str:
+        info = {}
+        
+        info["path"] = self.__path
+        info["content"] = self.__content
+
+        json_str = json.dumps(info, indent=4)
+        return json_str
 
 class Interface(Printable):
     """!
@@ -196,6 +207,18 @@ class Interface(Printable):
         out += 'Egress Bandwidth Limit: {} bps\n'.format('unlimited' if self.__bandwidth <= 0 else self.__bandwidth)
 
         return out
+        
+    def printJson(self) -> str:
+        info = {}
+        
+        info["Connected_to"] = self.__network.getName()
+        info["Address"] = '{}'.format(self.__address)
+        info["Link_Properties"] = '{}'.format(self.__address)
+        info["Added_Latency"] = self.__latency
+        info["Egress_Bandwidth_Limit"] = '{} bps'.format('unlimited' if self.__bandwidth <= 0 else self.__bandwidth)
+        
+        json_str = json.dumps(info, indent=4)
+        return json_str
 
 class Node(Printable, Registrable, Configurable, Vertex):
     """!
