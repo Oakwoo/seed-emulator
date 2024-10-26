@@ -30,3 +30,4 @@ project-words.txt
 **/.obsidian/**
 test_result.txt
 **/ghost/*
+**/sklearn-env/*
