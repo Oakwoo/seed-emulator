@@ -50,8 +50,8 @@ def run(dumpfile = None):
     as151.createRouter('router0').joinNetwork('net0').joinNetwork('ix100')
 
     as151.createHost('web').joinNetwork('net0')
-    web.install('web151')
-    emu.addBinding(Binding('web151', filter = Filter(nodeName = 'web', asn = 151)))
+    #web.install('web151')
+    #emu.addBinding(Binding('web151', filter = Filter(nodeName = 'web', asn = 151)))
 
     ###############################################################################
     # Create and set up AS-152
@@ -62,8 +62,8 @@ def run(dumpfile = None):
     as152.createRouter('router0').joinNetwork('net0').joinNetwork('ix100')
 
     as152.createGhostHost('web').joinNetwork('net0')
-    web.install('web152')
-    emu.addBinding(Binding('web152', filter = Filter(nodeName = 'web', asn = 152)))
+    #web.install('web152')
+    #emu.addBinding(Binding('web152', filter = Filter(nodeName = 'web', asn = 152)))
 
 
     ###############################################################################

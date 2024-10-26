@@ -231,6 +231,7 @@ class Binding(Printable):
 
         for (scope, type, name), obj in registry.getAll().items():
             if type != 'hnode': continue
+            if obj.isGhostnode(): continue
             node: Node = obj
             filter = self.filter
 

@@ -1067,7 +1067,7 @@ class Docker(Compiler):
                 self._log('compiling control service node {} for as{}...'.format(name, scope))
                 self.__services += self._compileNode(obj)
 
-            if type == 'hnode':
+            if type == 'hnode' and obj.isGhostnode() == False:
                 self._log('compiling host node {} for as{}...'.format(name, scope))
                 self.__services += self._compileNode(obj)
 

@@ -25,7 +25,6 @@ class AutonomousSystem(Printable, Graphable, Configurable):
     __subnets: List[IPv4Network]
     __routers: Dict[str, Node]
     __hosts: Dict[str, Node]
-    __ghosthosts: Dict[str, Node]
     __nets: Dict[str, Network]
 
     __name_servers: List[str]
@@ -39,7 +38,6 @@ class AutonomousSystem(Printable, Graphable, Configurable):
         """
         super().__init__()
         self.__hosts = {}
-        self.__ghosthosts = {}
         self.__routers = {}
         self.__nets = {}
         self.__asn = asn
@@ -115,7 +113,6 @@ class AutonomousSystem(Printable, Graphable, Configurable):
 
         for (key, val) in self.__nets.items(): reg.register(str(self.__asn), 'net', key, val)
         for (key, val) in self.__hosts.items(): reg.register(str(self.__asn), 'hnode', key, val)
-        for (key, val) in self.__ghosthosts.items(): reg.register(str(self.__asn), 'gnode', key, val)
         for (key, val) in self.__routers.items(): reg.register(str(self.__asn), 'rnode', key, val)
 
     def configure(self, emulator: Emulator):
@@ -284,10 +281,11 @@ class AutonomousSystem(Printable, Graphable, Configurable):
         @param name name of the new node.
         @returns Node.
         """
-        assert name not in self.__ghosthosts, 'Ghost Host with name {} already exists.'.format(name)
-        self.__ghosthosts[name] = Node(name, NodeRole.Host, self.__asn)
+        assert name not in self.__hosts, 'Ghost Host with name {} already exists.'.format(name)
+        self.__hosts[name] = Node(name, NodeRole.Host, self.__asn)
+        self.__hosts[name].setGhostnode(True)
 
-        return self.__ghosthosts[name]
+        return self.__hosts[name]
 
     def getGhostHost(self, name: str) -> Node:
         """!
@@ -296,7 +294,10 @@ class AutonomousSystem(Printable, Graphable, Configurable):
         @param name name of the node.
         @returns Node.
         """
-        return self.__ghosthosts[name]
+        assert name in self.__hosts, 'Host with name {} does not exist.'.format(name)
+        assert self.__hosts[name].isGhostnode(), 'Host with name {} is not a ghost node'.format(name)
+        
+        return self.__hosts[name]
 
     def getGhostHosts(self) -> List[str]:
         """!
@@ -304,7 +305,8 @@ class AutonomousSystem(Printable, Graphable, Configurable):
 
         @returns list of ghost hosts.
         """
-        return list(self.__ghosthosts.keys())
+        
+        return [name for name in list(self.__hosts.keys()) if self.__hosts[name].isGhostnode()]
 
     def _doCreateGraphs(self, emulator: Emulator):
         """!

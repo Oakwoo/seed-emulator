@@ -243,6 +243,7 @@ class Node(Printable, Registrable, Configurable, Vertex):
     __post_config_commands: List[Tuple[str, bool]]
     __ports: List[Tuple[int, int, str]]
     __privileged: bool
+    __ghostnode: bool
 
     __configured: bool
     __pending_nets: List[Tuple[str, str]]
@@ -286,6 +287,7 @@ class Node(Printable, Registrable, Configurable, Vertex):
         self.__post_config_commands = []
         self.__ports = []
         self.__privileged = False
+        self.__ghostnode = False
         self.__base_system = BaseSystem.DEFAULT
 
         self.__pending_nets = []
@@ -1035,6 +1037,28 @@ class Node(Printable, Registrable, Configurable, Vertex):
         indent -= 4
 
         return out
+        
+    def isGhostnode(self) -> bool:
+        """!
+        @brief Test if node is set to be Ghost node.
+
+        @returns True if is Ghost node, False otherwise.
+        """
+        return self.__ghostnode
+        
+    def setGhostnode(self, ghostnode: bool) -> Node:
+        """!
+        @brief Set or unset the node as ghost node.
+        
+        To facilitate future integration with other frameworks such as FATE,
+        set the Node as a Ghost Node, reserving resources without binding.
+
+        @param ghostnode set if node is ghost node.
+
+        @returns self, for chaining API calls.
+        """
+        self.__ghostnode = ghostnode
+        return self
 
 RouterFileTemplates: Dict[str, str] = {}
 

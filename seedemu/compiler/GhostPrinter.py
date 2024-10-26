@@ -39,7 +39,7 @@ class GhostPrinter(Compiler):
         
         info["Start_Commands"] = node.getStartCommands()
 
-        # info["Post_Config_Commands"] = node.getPostConfigCommands()
+        info["Post_Config_Commands"] = node.getPostConfigCommands()
         
         json_str = json.dumps(info, indent=4)
         return json_str
@@ -50,7 +50,7 @@ class GhostPrinter(Compiler):
         
         info = []
         for ((scope, type, name), obj) in registry.getAll().items():
-            if type == 'gnode': #'ghost':
+            if type == 'hnode' and obj.isGhostnode():
                 self._log('compiling ghost node {} for as{}...'.format(scope, name))
                 info.append(json.loads(self.__printJson(obj)))
         
