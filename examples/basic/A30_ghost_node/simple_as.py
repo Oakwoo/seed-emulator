@@ -49,7 +49,7 @@ def run(dumpfile = None):
     as151.createNetwork('net0')
     as151.createRouter('router0').joinNetwork('net0').joinNetwork('ix100')
 
-    as151.createHost('web').joinNetwork('net0')
+    as151.createGhostHost('web').joinNetwork('net0')
     #web.install('web151')
     #emu.addBinding(Binding('web151', filter = Filter(nodeName = 'web', asn = 151)))
 
@@ -62,6 +62,7 @@ def run(dumpfile = None):
     as152.createRouter('router0').joinNetwork('net0').joinNetwork('ix100')
 
     as152.createGhostHost('web').joinNetwork('net0')
+    as152.createGhostHost('web3').joinNetwork('net0')
     #web.install('web152')
     #emu.addBinding(Binding('web152', filter = Filter(nodeName = 'web', asn = 152)))
 

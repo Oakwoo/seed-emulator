@@ -11,6 +11,7 @@ from .Node import RealWorldRouter
 from ipaddress import IPv4Network
 from typing import Dict, List
 import requests
+import json
 
 RIS_PREFIXLIST_URL = 'https://stat.ripe.net/data/announced-prefixes/data.json'
 
@@ -377,3 +378,62 @@ class AutonomousSystem(Printable, Graphable, Configurable):
             out += host.print(indent + 4)
 
         return out
+
+    def printJsonBrief(self) -> str:
+        info = {}
+
+        info["asn"] = self.__asn
+
+        info["Networks"] = []
+        for net in self.__nets.values():
+            info["Networks"].append(json.loads(net.printJson()))
+
+        info["Routers"] = []
+        for node in self.__routers.values():
+            ####################
+            # in future, it is better to create node.printJson(self) and node.printJsonBrief(self)
+            router_info = {}
+            router_info["Name"] = node.getName()
+
+            (scope, type, _) = node.getRegistryInfo()
+            prefix = '{}_{}_'.format(type, scope)
+            real_nodename = '{}{}'.format(prefix, node.getName())
+            router_info["NodeId"] = real_nodename
+
+            router_info["Role"] = '{}'.format(node.getRole())
+
+            router_info["Ghost_Node"] = '{}'.format(node.isGhostnode())
+
+            router_info["Interfaces"] = []
+            for interface in node.getInterfaces():
+                router_info["Interfaces"].append(json.loads(interface.printJson()))
+            ####################
+
+            info["Routers"].append(router_info)
+
+        info["Hosts"] = []
+        for host in self.__hosts.values():
+            ####################
+            # in future, it is better to create node.printJson(self) and node.printJsonBrief(self)
+            host_info = {}
+            host_info["Name"] = host.getName()
+
+            (scope, type, _) = host.getRegistryInfo()
+            prefix = '{}_{}_'.format(type, scope)
+            real_nodename = '{}{}'.format(prefix, host.getName())
+            host_info["NodeId"] = real_nodename
+
+            host_info["Role"] = '{}'.format(host.getRole())
+
+            host_info["Ghost_Node"] = '{}'.format(host.isGhostnode())
+
+            host_info["Interfaces"] = []
+            for interface in host.getInterfaces():
+                host_info["Interfaces"].append(json.loads(interface.printJson()))
+            ####################
+
+            info["Hosts"].append(host_info)
+
+
+        json_str = json.dumps(info, indent=4)
+        return json_str

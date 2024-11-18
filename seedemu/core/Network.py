@@ -7,6 +7,7 @@ from .Registry import Registrable
 from .AddressAssignmentConstraint import AddressAssignmentConstraint, Assigner
 from .Visualization import Vertex
 from typing import Dict, Tuple, List
+import json
 
 class Network(Printable, Registrable, Vertex):
     """!
@@ -299,3 +300,18 @@ class Network(Printable, Registrable, Vertex):
             out += 'Remote access provider: {}\n'.format(self.__rap.getName())
 
         return out
+        
+    def printJson(self) -> str:
+        info = {}
+        
+        info["name"] = self.__name
+        info["type"] = '{}'.format(self.__type)
+        info["prefix"] = '{}'.format(self.__prefix)
+        info["Address_Assignment_Constraint"] = self.__aac.print(indent=0)
+        
+        info["Remote_Access_Provider"] = []
+        if self.__rap != None:
+            info["Remote_Access_Provider"].append(self.__rap.getName())
+
+        json_str = json.dumps(info, indent=4)
+        return json_str
