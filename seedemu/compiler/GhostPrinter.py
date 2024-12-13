@@ -32,6 +32,8 @@ class GhostPrinter(Compiler):
 
         info["Ghost_Node"] = '{}'.format(node.isGhostnode())
         
+        info["Autonomous_Systems"] = node.getAsn()
+        
         info["Interfaces"] = []
         for interface in node.getInterfaces():
             info["Interfaces"].append(json.loads(interface.printJson()))
@@ -55,24 +57,28 @@ class GhostPrinter(Compiler):
         registry = emulator.getRegistry()
         self._log('print ghost node information ...')
         
-        info = []
-        base = emulator.getLayer("Base")
+        node_info = []
+        ASN_set = set()
         for ((scope, type, name), obj) in registry.getAll().items():
             if type == 'hnode' and obj.isGhostnode():
                 self._log('compiling ghost node {} for as{}...'.format(scope, name))
-                AS = base.getAutonomousSystem(obj.getAsn())
-                # seperate the AS's printJson and __printJson(obj, AS) avoids endless calling.
-                # because __printJson(obj) may become a function of Node class: obj.printJson() in future
-                # Logically, the node informations are contained in Autonomous System information.
-                # Autonomous System Class is the parent level information of Node Class.
-                # i.e. AutonomousSystem.printJson has INVOKED Node.printJson
-                # printJson function should only print out the children level information.
-                # Invoking AS.printJson inside of Node.printJson will cause endless invoking!
+                ASN_set.add(obj.getAsn())
                 ghost_node_info = json.loads(self.__printJson(obj))
-                ghost_node_info["Autonomous_System"] = json.loads(AS.printJsonBrief())
-                info.append(ghost_node_info)
+                node_info.append(ghost_node_info)
         
-        json_str = json.dumps(info, indent=4)  
-        self._log('creating ghost_nodes.json...'.format(scope, name))
+        json_str = json.dumps(node_info, indent=4)  
+        self._log('creating ghost_nodes.json...')
         print(json_str, file=open('GhostNodes.json', 'w'))
+        
+        AS_info = []
+        base = emulator.getLayer("Base")
+        for asn in ASN_set:
+            AS = base.getAutonomousSystem(asn)
+            #TODO printJsonBrief to printJson
+            as_info = json.loads(AS.printJsonBrief())
+            AS_info.append(as_info)
+            
+        as_json_str = json.dumps(AS_info, indent=4)  
+        self._log('creating Autonomous_Systems.json...')
+        print(as_json_str, file=open('AutonomousSystems.json', 'w'))
         
