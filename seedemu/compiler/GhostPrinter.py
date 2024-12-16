@@ -1,4 +1,5 @@
 from seedemu.core import Emulator, Compiler, Registry, ScopedRegistry, Node, AutonomousSystem
+from seedemu.core.enums import NetworkType
 import json
 
 class GhostPrinter(Compiler):
@@ -82,3 +83,25 @@ class GhostPrinter(Compiler):
         self._log('creating Autonomous_Systems.json...')
         print(as_json_str, file=open('AutonomousSystems.json', 'w'))
         
+        layers_name = [layer.getName() for layer in emulator.getLayers()]
+        if 'EtcHosts' in layers_name:
+            etc_hosts = emulator.getLayer('EtcHosts')
+            hosts_file_content = []
+            for ((scope, type, name), node) in registry.getAll().items():
+                if type in ['hnode', 'snode', 'rnode', 'rs']:
+                    #addresses = etc_hosts.__getAllIpAddress(node)
+                    # does not have public function, maybe add later
+                    addresses = []
+                    for iface in node.getInterfaces():
+                        address = iface.getAddress()
+                        if iface.getNet().getType() == NetworkType.Bridge:
+                            pass
+                        if iface.getNet().getType() == NetworkType.InternetExchange:
+                            pass
+                        else:
+                            addresses.append(address)
+		    ######################################
+                    for address in addresses:
+                        hosts_file_content.append(f"{address} {' '.join(node.getHostNames())}")
+            sorted_hosts_file_content = sorted(hosts_file_content, key=lambda x: tuple(map(int, x.split()[0].split('.'))))
+            print('\n'.join(sorted_hosts_file_content), file=open('etc-hosts', 'w'))
