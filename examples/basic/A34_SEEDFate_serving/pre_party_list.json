@@ -1,0 +1,126 @@
+{
+    "training": {
+        "10000": {
+            "federation": [
+                "hnode_151_federation"
+            ],
+            "proxy": [
+                "hnode_151_proxy"
+            ],
+            "fateboard": [
+                "hnode_151_fateboard"
+            ],
+            "roll": [
+                "hnode_151_roll"
+            ],
+            "egg": [
+                "hnode_151_egg"
+            ],
+            "python": [
+                "hnode_151_python"
+            ],
+            "meta-service": [
+                "hnode_151_meta-service"
+            ],
+            "mysql": [
+                "hnode_151_mysql"
+            ],
+            "redis": [
+                "hnode_151_redis"
+            ]
+        },
+        "9999": {
+            "federation": [
+                "hnode_152_federation"
+            ],
+            "proxy": [
+                "hnode_152_proxy"
+            ],
+            "fateboard": [
+                "hnode_152_fateboard"
+            ],
+            "roll": [
+                "hnode_152_roll"
+            ],
+            "egg": [
+                "hnode_152_egg"
+            ],
+            "python": [
+                "hnode_152_python"
+            ],
+            "meta-service": [
+                "hnode_152_meta-service"
+            ],
+            "mysql": [
+                "hnode_152_mysql"
+            ],
+            "redis": [
+                "hnode_152_redis"
+            ]
+        },
+        "8888": {
+            "federation": [
+                "hnode_150_federation"
+            ],
+            "proxy": [
+                "hnode_150_proxy"
+            ],
+            "fateboard": [
+                "hnode_150_fateboard"
+            ],
+            "roll": [
+                "hnode_150_roll"
+            ],
+            "egg": [
+                "hnode_150_egg"
+            ],
+            "python": [
+                "hnode_150_python"
+            ],
+            "meta-service": [
+                "hnode_150_meta-service"
+            ],
+            "mysql": [
+                "hnode_150_mysql"
+            ],
+            "redis": [
+                "hnode_150_redis"
+            ]
+        }
+    },
+    "serving": {
+        "10000": {
+            "redis": [
+                "hnode_151_redis"
+            ],
+            "serving-server": [
+                "hnode_151_serving-server"
+            ],
+            "serving-proxy": [
+                "hnode_151_serving-proxy"
+            ]
+        },
+        "9999": {
+            "redis": [
+                "hnode_152_redis"
+            ],
+            "serving-server": [
+                "hnode_152_serving-server"
+            ],
+            "serving-proxy": [
+                "hnode_152_serving-proxy"
+            ]
+        },
+        "8888": {
+            "redis": [
+                "hnode_150_redis"
+            ],
+            "serving-server": [
+                "hnode_150_serving-server"
+            ],
+            "serving-proxy": [
+                "hnode_150_serving-proxy"
+            ]
+        }
+    }
+}

@@ -1,0 +1,20 @@
+{
+    "hnode_151_federation": "federation",
+    "hnode_151_proxy": "proxy",
+    "hnode_151_fateboard": "fateboard",
+    "hnode_151_roll": "roll",
+    "hnode_151_egg": "egg",
+    "hnode_151_python": "python",
+    "hnode_151_meta-service": "meta-service",
+    "hnode_151_mysql": "mysql",
+    "hnode_151_redis": "redis",
+    "hnode_152_federation": "federation",
+    "hnode_152_proxy": "proxy",
+    "hnode_152_fateboard": "fateboard",
+    "hnode_152_roll": "roll",
+    "hnode_152_egg": "egg",
+    "hnode_152_python": "python",
+    "hnode_152_meta-service": "meta-service",
+    "hnode_152_mysql": "mysql",
+    "hnode_152_redis": "redis"
+}

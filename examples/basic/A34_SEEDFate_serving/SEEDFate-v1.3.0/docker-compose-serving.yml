@@ -1,0 +1,55 @@
+########################################################
+# Copyright 2019-2020 program was created VMware, Inc. #
+# SPDX-License-Identifier: Apache-2.0                  #
+########################################################
+
+version: '3'
+
+networks:
+SKELETON_SUBNETS
+services:
+  serving-server:
+    build: SERVING-SERVER_BUILD_FOLDER
+    image: "${PREFIX}/serving-server:${SERVING_TAG}-PARTY_ID"
+    expose:
+      - 8000
+    volumes:
+      - ./confs/serving-server/conf/serving-server.properties:/data/projects/fate/serving-server/conf/serving-server.properties
+      - ./confs/serving-server/.fate:/root/.fate
+    networks:
+        SERVING-SERVER_NETWORK:
+            ipv4_address: PRE-ASSIGNED_SERVING-SERVER_IP
+    cap_add:
+      - NET_ADMIN
+
+  serving-proxy:
+    build: SERVING-PROXY_BUILD_FOLDER
+    image: "${PREFIX}/serving-proxy:${SERVING_TAG}-PARTY_ID"
+    expose:
+      - 8059
+      - 8869
+      - 8879
+    volumes:
+      - ./confs/serving-proxy/conf/application.properties:/data/projects/fate/serving-proxy/conf/application.properties
+      - ./confs/serving-proxy/conf/route_table.json:/data/projects/fate/serving-proxy/conf/route_table.json
+    networks:
+        SERVING-PROXY_NETWORK:
+            ipv4_address: PRE-ASSIGNED_SERVING-PROXY_IP
+    cap_add:
+      - NET_ADMIN
+
+  redis:
+    build: REDIS_BUILD_FOLDER
+    image: "redis:5-PARTY_ID"
+    expose:
+      - 6379
+    command: redis-server --requirepass fate_dev
+    volumes:
+      - ./confs/redis/data:/data
+    networks:
+        REDIS_NETWORK:
+            ipv4_address: PRE-ASSIGNED_REDIS_IP
+    cap_add:
+      - NET_ADMIN
+
+

@@ -5,7 +5,7 @@ import json
 from os import mkdir, chdir, getcwd
 from hashlib import md5
 
-DockerFileTemplates: dict[str, str] = {}
+DockerFileTemplates = {}
 
 DockerFileTemplates['egg'] = """\
 FROM federatedai/egg:1.3.0-release
@@ -26,18 +26,24 @@ RUN yum install iproute -y
 
 DockerFileTemplates['fateboard'] = """\
 FROM federatedai/fateboard:1.3.0-release
+RUN apk add bash
+RUN apk add iproute2
 
 {dockercontent}
 """
 
 DockerFileTemplates['federation'] = """\
 FROM federatedai/federation:1.3.0-release
+RUN apk add bash
+RUN apk add iproute2
 
 {dockercontent}
 """
 
 DockerFileTemplates['meta-service'] = """\
 FROM federatedai/meta-service:1.3.0-release
+RUN apk add bash
+RUN apk add iproute2
 
 {dockercontent}
 """
@@ -46,12 +52,15 @@ DockerFileTemplates['mysql'] = """\
 FROM mysql:8
 RUN microdnf install iproute
 RUN microdnf install iputils
+RUN microdnf install iproute-tc
 
 {dockercontent}
 """
 
 DockerFileTemplates['proxy'] = """\
 FROM federatedai/proxy:1.3.0-release
+RUN apk add bash
+RUN apk add iproute2
 
 {dockercontent}
 """
@@ -84,11 +93,13 @@ RUN apt-get install iputils-ping
 
 DockerFileTemplates['roll'] = """\
 FROM federatedai/roll:1.3.0-release
+RUN apk add bash
+RUN apk add iproute2
 
 {dockercontent}
 """
 
-StartScriptTemplates: dict[str, str] = {}
+StartScriptTemplates = {}
 
 StartScriptTemplates['egg'] = """\
 #!/bin/bash
@@ -130,7 +141,7 @@ StartScriptTemplates['mysql'] = """\
 #!/bin/bash
 {startCommands}
 
-mysqld
+docker-entrypoint.sh mysqld
 
 tail -f /dev/null
 """
@@ -189,6 +200,57 @@ build=True
 
 buildInfo='{build_conf_json}'
 """
+
+InterfaceSetupTemplate = """\
+#!/bin/bash
+cidr_to_net(){
+    netmasklen="`echo $1 | sed -E -n 's/^([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})\/([0-9]{1,2})+.*/\\5/p'`"
+    leftlen=$((netmasklen))
+    network=""
+    for ((i=1; i<=4; i++))
+    do
+        if (($i != 1)); then
+          network=$network'.'
+        fi
+        ip_segment="`echo $1 | sed -E -n 's/^([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})\/([0-9]{1,2})+.*/\\'${i}'/p'`"
+        if (($leftlen < 8)) && (($leftlen > 0)) ; then
+            ip_segment=$((ip_segment&(2**8-2**(8-leftlen))))
+        elif (($leftlen <= 0)); then
+            ip_segment=0
+        fi
+        network=$network$ip_segment
+        leftlen=$leftlen-8
+    done
+    echo $network/$netmasklen
+    
+}
+
+ls /sys/class/net | while read -r ifname; do {
+    # echo $ifname
+    ip addr show "$ifname" | grep "inet" | while read -r iaddr; do {
+        # echo $iaddr
+        addr="`echo $iaddr | sed -E -n 's/^inet +([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\/[0-9]{1,2}) +.*/\\1/p'`"
+        # echo $addr
+        net="`cidr_to_net "$addr"`"
+        # echo $net
+        [ -z "$net" ] && continue
+            line="`grep "$net" < /ifinfo.txt`"
+            new_ifname="`cut -d: -f1 <<< "$line"`"
+            latency="`cut -d: -f3 <<< "$line"`"
+            bw="`cut -d: -f4 <<< "$line"`"
+            [ "$bw" = 0 ] && bw=1000000000000
+            loss="`cut -d: -f5 <<< "$line"`"
+            [ ! -z "$new_ifname" ] && {
+                ip li set "$ifname" down
+                ip li set "$ifname" name "$new_ifname"
+                ip li set "$new_ifname" up
+                tc qdisc add dev "$new_ifname" root handle 1:0 tbf rate "${bw}bit" buffer 1000000 limit 1000
+                tc qdisc add dev "$new_ifname" parent 1:0 handle 10: netem delay "${latency}ms" loss "${loss}%"
+            }
+    };done
+};done
+"""
+
 
 with open('./pre_party_list.json', 'r') as arch_json:
     arch_data = json.load(arch_json)
@@ -269,8 +331,14 @@ for partyid, party in arch_data.items():
             staged_path = md5(path.encode('utf-8')).hexdigest()
             print(etc_hosts, file=open(staged_path, 'w'))
             print("Generating /etc/hosts for", nodeid)
+
+            # update /interface_setup
+            path = "/interface_setup"
+            staged_path = md5(path.encode('utf-8')).hexdigest()
+            print(InterfaceSetupTemplate, file=open(staged_path, 'w'))
+            print("Generating /interface_setup for", nodeid)
             chdir('..')
-            
+
     # generate parties.conf content
     build_conf[partyid] = {}
     skeleton_subnets = set()
@@ -313,7 +381,7 @@ print(PartiesConfTemplate.format(
           partyiplist = " ".join(partyiplist),
           servingiplist = " ".join(servingiplist),
           build_conf_json = build_conf_json
-      ), file=open("parties.conf", 'w'))
+      ), file=open("../SEEDFate-v1.3.0/parties.conf", 'w'))
 
 
 
