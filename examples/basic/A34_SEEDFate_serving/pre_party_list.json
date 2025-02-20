@@ -91,35 +91,35 @@
     "serving": {
         "10000": {
             "redis": [
-                "hnode_151_redis"
+                "hnode_151_Servingredis"
             ],
             "serving-server": [
-                "hnode_151_serving-server"
+                "hnode_151_Servingserving-server"
             ],
             "serving-proxy": [
-                "hnode_151_serving-proxy"
+                "hnode_151_Servingserving-proxy"
             ]
         },
         "9999": {
             "redis": [
-                "hnode_152_redis"
+                "hnode_152_Servingredis"
             ],
             "serving-server": [
-                "hnode_152_serving-server"
+                "hnode_152_Servingserving-server"
             ],
             "serving-proxy": [
-                "hnode_152_serving-proxy"
+                "hnode_152_Servingserving-proxy"
             ]
         },
         "8888": {
             "redis": [
-                "hnode_150_redis"
+                "hnode_150_Servingredis"
             ],
             "serving-server": [
-                "hnode_150_serving-server"
+                "hnode_150_Servingserving-server"
             ],
             "serving-proxy": [
-                "hnode_150_serving-proxy"
+                "hnode_150_Servingserving-proxy"
             ]
         }
     }

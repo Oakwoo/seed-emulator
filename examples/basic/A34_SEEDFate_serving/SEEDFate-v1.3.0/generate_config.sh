@@ -109,7 +109,7 @@ GenerateConfig() {
         # load SEEDFATE build component
         ## networks
         net_dc=""
-        networks_name=($(echo $buildInfo | jq -r '."'$party_id'".skeleton_subnets[]'))
+        networks_name=($(echo $buildInfo | jq -r '.training."'$party_id'".skeleton_subnets[]'))   # " is necessary, can't delete
         for network in $(echo ${networks_name[*]})
         do
             net_dc="$net_dc  $network:\n"
@@ -123,22 +123,22 @@ GenerateConfig() {
         for component in ${components[*]}
         do
             # if component contains '-' will be treated as code, should use " " to emphasize it.
-            build_folder=$(echo $buildInfo | jq -r '."'$party_id'"."'$component'".build_folder')
-            build_file_path=$(echo $buildInfo | jq -r '."'$party_id'"."'$component'".build_file_path')
+            build_folder=$(echo $buildInfo | jq -r '.training."'$party_id'"."'$component'".build_folder')
+            build_file_path=$(echo $buildInfo | jq -r '.training."'$party_id'"."'$component'".build_file_path')
             cp -r $build_file_path confs-$party_id/$build_folder
             sed -i "s|"${component^^}"_BUILD_FOLDER|${build_folder}|g" ./confs-$party_id/docker-compose.yml
-            skeleton_subnet=$(echo $buildInfo | jq -r '."'$party_id'"."'$component'".skeleton_subnet')
+            skeleton_subnet=$(echo $buildInfo | jq -r '.training."'$party_id'"."'$component'".skeleton_subnet')
             sed -i "s|"${component^^}"_NETWORK|${skeleton_subnet}|g" ./confs-$party_id/docker-compose.yml
-            pre_assigned_ip=$(echo $buildInfo | jq -r '."'$party_id'"."'$component'".ip')
+            pre_assigned_ip=$(echo $buildInfo | jq -r '.training."'$party_id'"."'$component'".ip')
             sed -i "s|PRE-ASSIGNED_"${component^^}"_IP|${pre_assigned_ip}|g" ./confs-$party_id/docker-compose.yml
         done
-        #build_folder=$(echo $buildInfo | jq -r '."'$party_id'".proxy.build_folder')
-        #build_file_path=$(echo $buildInfo | jq -r '."'$party_id'".proxy.build_file_path')
+        #build_folder=$(echo $buildInfo | jq -r '.training."'$party_id'".proxy.build_folder')
+        #build_file_path=$(echo $buildInfo | jq -r '.training."'$party_id'".proxy.build_file_path')
         #cp -r $build_file_path confs-$party_id/$build_folder
         #sed -i "s|PROXY_BUILD_FOLDER|${build_folder}|g" ./confs-$party_id/docker-compose.yml
-        #skeleton_subnet=$(echo $buildInfo | jq -r '."'$party_id'".proxy.skeleton_subnet')
+        #skeleton_subnet=$(echo $buildInfo | jq -r '.training."'$party_id'".proxy.skeleton_subnet')
         #sed -i "s|PROXY_NETWORK|${skeleton_subnet}|g" ./confs-$party_id/docker-compose.yml
-        #pre_assigned_ip=$(echo $buildInfo | jq -r '."'$party_id'".proxy.ip')
+        #pre_assigned_ip=$(echo $buildInfo | jq -r '.training."'$party_id'".proxy.ip')
         #sed -i "s|PRE-ASSIGNED_PROXY_IP|${pre_assigned_ip}|g" ./confs-$party_id/docker-compose.yml
 
 	## replace fateboard port
@@ -395,7 +395,7 @@ EOF
         # load SEEDFATE build component
         ## networks
         net_dc=""
-        networks_name=($(echo $buildInfo | jq -r '."'$party_id'".skeleton_subnets[]'))
+        networks_name=($(echo $buildInfo | jq -r '.serving."'$party_id'".skeleton_subnets[]'))
         for network in $(echo ${networks_name[*]})
         do
             net_dc="$net_dc  $network:\n"
@@ -409,13 +409,13 @@ EOF
         for component in ${components[*]}
         do
             # if component contains '-' will be treated as code, should use " " to emphasize it.
-            build_folder=$(echo $buildInfo | jq -r '."'$party_id'"."'$component'".build_folder')
-            build_file_path=$(echo $buildInfo | jq -r '."'$party_id'"."'$component'".build_file_path')
+            build_folder=$(echo $buildInfo | jq -r '.serving."'$party_id'"."'$component'".build_folder')
+            build_file_path=$(echo $buildInfo | jq -r '.serving."'$party_id'"."'$component'".build_file_path')
             cp -r $build_file_path serving-$party_id/$build_folder
             sed -i "s|"${component^^}"_BUILD_FOLDER|${build_folder}|g" ./serving-$party_id/docker-compose.yml
-            skeleton_subnet=$(echo $buildInfo | jq -r '."'$party_id'"."'$component'".skeleton_subnet')
+            skeleton_subnet=$(echo $buildInfo | jq -r '.serving."'$party_id'"."'$component'".skeleton_subnet')
             sed -i "s|"${component^^}"_NETWORK|${skeleton_subnet}|g" ./serving-$party_id/docker-compose.yml
-            pre_assigned_ip=$(echo $buildInfo | jq -r '."'$party_id'"."'$component'".ip')
+            pre_assigned_ip=$(echo $buildInfo | jq -r '.serving."'$party_id'"."'$component'".ip')
             sed -i "s|PRE-ASSIGNED_"${component^^}"_IP|${pre_assigned_ip}|g" ./serving-$party_id/docker-compose.yml
         done
 

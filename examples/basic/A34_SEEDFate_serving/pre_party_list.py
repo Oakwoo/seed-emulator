@@ -16,7 +16,7 @@ def createServingFateCluster(partyid, AutonomousSystem):
         Fate_arch_tree["serving"][partyid] = {}
     components=["redis", "serving-server", "serving-proxy"]
     for component in components:
-        Fate_arch_tree["serving"][partyid][component]=["hnode_"+str(AutonomousSystem)+"_"+component]
+        Fate_arch_tree["serving"][partyid][component]=["hnode_"+str(AutonomousSystem)+"_Serving"+component]
 
 createFateCluster(10000, 151)
 createServingFateCluster(10000, 151)

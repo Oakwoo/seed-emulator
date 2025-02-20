@@ -36,9 +36,9 @@ def run(dumpfile = None):
     for component in components:
         as150.createGhostHost(component).joinNetwork('net0')
 
-    serving_components=["serving-redis", "serving-server", "serving-proxy"]
+    serving_components=["redis", "serving-server", "serving-proxy"]
     for component in serving_components:
-        as150.createGhostHost(component).joinNetwork('net0')
+        as150.createGhostHost("Serving"+component).joinNetwork('net0')
 
     # Create a host called web and connect it to a network
     #as150.createHost('web').joinNetwork('net0')
@@ -63,9 +63,9 @@ def run(dumpfile = None):
     for component in components:
         as151.createGhostHost(component).joinNetwork('net0')
 
-    serving_components=["serving-redis", "serving-server", "serving-proxy"]
+    serving_components=["redis", "serving-server", "serving-proxy"]
     for component in serving_components:
-        as151.createGhostHost(component).joinNetwork('net0')
+        as151.createGhostHost("Serving"+component).joinNetwork('net0')
 
     #web.install('web151')
     #emu.addBinding(Binding('web151', filter = Filter(nodeName = 'web', asn = 151)))
@@ -82,9 +82,9 @@ def run(dumpfile = None):
     for component in components:
         as152.createGhostHost(component).joinNetwork('net0')
 
-    serving_components=["serving-redis", "serving-server", "serving-proxy"]
+    serving_components=["redis", "serving-server", "serving-proxy"]
     for component in serving_components:
-        as152.createGhostHost(component).joinNetwork('net0')
+        as152.createGhostHost("Serving"+component).joinNetwork('net0')
 
     #web.install('web152')
     #emu.addBinding(Binding('web152', filter = Filter(nodeName = 'web', asn = 152)))

@@ -6,10 +6,8 @@ from os import mkdir, chdir, getcwd
 from hashlib import md5
 
 DockerFileTemplates = {}
-DockerFileTemplates["training"] = {}
-DockerFileTemplates["serving"] = {}
 
-DockerFileTemplates["training"]['egg'] = """\
+DockerFileTemplates['egg'] = """\
 FROM federatedai/egg:1.3.0-release
 # Since CentOS 7 has reached EOL, the mirror is moved to vault
 # before using yum to install， I need to run the following command
@@ -26,7 +24,7 @@ RUN yum install iproute -y
 {dockercontent}
 """
 
-DockerFileTemplates["training"]['fateboard'] = """\
+DockerFileTemplates['fateboard'] = """\
 FROM federatedai/fateboard:1.3.0-release
 RUN apk add bash
 RUN apk add iproute2
@@ -34,7 +32,7 @@ RUN apk add iproute2
 {dockercontent}
 """
 
-DockerFileTemplates["training"]['federation'] = """\
+DockerFileTemplates['federation'] = """\
 FROM federatedai/federation:1.3.0-release
 RUN apk add bash
 RUN apk add iproute2
@@ -42,7 +40,7 @@ RUN apk add iproute2
 {dockercontent}
 """
 
-DockerFileTemplates["training"]['meta-service'] = """\
+DockerFileTemplates['meta-service'] = """\
 FROM federatedai/meta-service:1.3.0-release
 RUN apk add bash
 RUN apk add iproute2
@@ -50,7 +48,7 @@ RUN apk add iproute2
 {dockercontent}
 """
 
-DockerFileTemplates["training"]['mysql'] = """\
+DockerFileTemplates['mysql'] = """\
 FROM mysql:8
 RUN microdnf install iproute
 RUN microdnf install iputils
@@ -59,7 +57,7 @@ RUN microdnf install iproute-tc
 {dockercontent}
 """
 
-DockerFileTemplates["training"]['proxy'] = """\
+DockerFileTemplates['proxy'] = """\
 FROM federatedai/proxy:1.3.0-release
 RUN apk add bash
 RUN apk add iproute2
@@ -67,7 +65,7 @@ RUN apk add iproute2
 {dockercontent}
 """
 
-DockerFileTemplates["training"]['python'] = """\
+DockerFileTemplates['python'] = """\
 FROM federatedai/python:1.3.0-release
 # Since CentOS 7 has reached EOL, the mirror is moved to vault
 # before using yum to install， I need to run the following command
@@ -84,7 +82,7 @@ RUN yum install iproute -y
 {dockercontent}
 """
 
-DockerFileTemplates["training"]['redis'] = """\
+DockerFileTemplates['redis'] = """\
 FROM redis:5
 RUN apt-get update
 RUN apt-get install iproute2 -y
@@ -93,7 +91,7 @@ RUN apt-get install iputils-ping
 {dockercontent}
 """
 
-DockerFileTemplates["training"]['roll'] = """\
+DockerFileTemplates['roll'] = """\
 FROM federatedai/roll:1.3.0-release
 RUN apk add bash
 RUN apk add iproute2
@@ -101,7 +99,7 @@ RUN apk add iproute2
 {dockercontent}
 """
 
-DockerFileTemplates["serving"]['redis'] = """\
+DockerFileTemplates['serving-redis'] = """\
 FROM redis:5
 RUN apt-get update
 RUN apt-get install iproute2 -y
@@ -110,7 +108,7 @@ RUN apt-get install iputils-ping
 {dockercontent}
 """
 
-DockerFileTemplates["serving"]['serving-server'] = """\
+DockerFileTemplates['serving-server'] = """\
 FROM federatedai/serving-server:1.2.2-release
 RUN apk add bash
 RUN apk add iproute2
@@ -118,7 +116,7 @@ RUN apk add iproute2
 {dockercontent}
 """
 
-DockerFileTemplates["serving"]['serving-proxy'] = """\
+DockerFileTemplates['serving-proxy'] = """\
 FROM federatedai/serving-proxy:1.2.2-release
 RUN apk add bash
 RUN apk add iproute2
@@ -127,10 +125,8 @@ RUN apk add iproute2
 """
 
 StartScriptTemplates = {}
-StartScriptTemplates["training"] = {}
-StartScriptTemplates["serving"] = {}
 
-StartScriptTemplates["training"]['egg'] = """\
+StartScriptTemplates['egg'] = """\
 #!/bin/bash
 {startCommands}
 
@@ -139,7 +135,7 @@ cd /data/projects/fate/eggroll/storage-service-cxx &&     export LD_LIBRARY_PATH
 tail -f /dev/null
 """
 
-StartScriptTemplates["training"]['fateboard'] = """\
+StartScriptTemplates['fateboard'] = """\
 #!/bin/bash
 {startCommands}
 
@@ -148,7 +144,7 @@ java -Dspring.config.location=/data/projects/fate/fateboard/conf/application.pro
 tail -f /dev/null
 """
 
-StartScriptTemplates["training"]['federation'] = """\
+StartScriptTemplates['federation'] = """\
 #!/bin/bash
 {startCommands}
 
@@ -157,7 +153,7 @@ java -cp "conf/:lib/*:fate-federation.jar" com.webank.ai.fate.driver.Federation 
 tail -f /dev/null
 """
 
-StartScriptTemplates["training"]['meta-service'] = """\
+StartScriptTemplates['meta-service'] = """\
 #!/bin/bash
 {startCommands}
 
@@ -166,7 +162,7 @@ java -cp "conf/:lib/*:fate-meta-service.jar" com.webank.ai.eggroll.framework.Met
 tail -f /dev/null
 """
 
-StartScriptTemplates["training"]['mysql'] = """\
+StartScriptTemplates['mysql'] = """\
 #!/bin/bash
 {startCommands}
 
@@ -175,7 +171,7 @@ docker-entrypoint.sh mysqld
 tail -f /dev/null
 """
 
-StartScriptTemplates["training"]['proxy'] = """\
+StartScriptTemplates['proxy'] = """\
 #!/bin/bash
 {startCommands}
 
@@ -184,7 +180,7 @@ java -cp "conf/:lib/*:fate-proxy.jar" com.webank.ai.fate.networking.Proxy -c con
 tail -f /dev/null
 """
 
-StartScriptTemplates["training"]['python'] = """\
+StartScriptTemplates['python'] = """\
 #!/bin/bash
 {startCommands}
 
@@ -193,25 +189,7 @@ sleep 20; source /data/projects/python/venv/bin/activate && cd ./fate_flow &&   
 tail -f /dev/null
 """
 
-StartScriptTemplates["training"]['redis'] = """\
-#!/bin/bash
-{startCommands}
-
-docker-entrypoint.sh redis-server --requirepass fate_dev
-
-tail -f /dev/null
-"""
-
-StartScriptTemplates["training"]['roll'] = """\
-#!/bin/bash
-{startCommands}
-
-java -cp "conf/:lib/*:fate-roll.jar" com.webank.ai.eggroll.framework.Roll -c conf/roll.properties
-
-tail -f /dev/null
-"""
-
-StartScriptTemplates["serving"]['redis'] = """\
+StartScriptTemplates['redis'] = """\
 #!/bin/bash
 {startCommands}
 
@@ -220,7 +198,25 @@ redis-server --requirepass fate_dev
 tail -f /dev/null
 """
 
-StartScriptTemplates["serving"]['serving-server'] = """\
+StartScriptTemplates['roll'] = """\
+#!/bin/bash
+{startCommands}
+
+java -cp "conf/:lib/*:fate-roll.jar" com.webank.ai.eggroll.framework.Roll -c conf/roll.properties
+
+tail -f /dev/null
+"""
+
+StartScriptTemplates['serving-redis'] = """\
+#!/bin/bash
+{startCommands}
+
+redis-server --requirepass fate_dev
+
+tail -f /dev/null
+"""
+
+StartScriptTemplates['serving-server'] = """\
 #!/bin/bash
 {startCommands}
 
@@ -229,7 +225,7 @@ java -cp conf/:lib/*:fate-serving-server.jar com.webank.ai.fate.serving.ServingS
 tail -f /dev/null
 """
 
-StartScriptTemplates["serving"]['serving-proxy'] = """\
+StartScriptTemplates['serving-proxy'] = """\
 #!/bin/bash
 {startCommands}
 
@@ -307,112 +303,9 @@ ls /sys/class/net | while read -r ifname; do {
 };done
 """
 
-def generate_party_conf(service, partyid, party):
-    global build_conf, partylist, partyiplist, servingiplist
-    node_component_dic = {}
-    for component, nodeids in party.items():
-        for nodeid in nodeids:
-            node_component_dic[nodeid]=component
-            
-    # generate /etc/hosts for this party
-    # go into any one component of this party
-    chdir(list(party.values())[0][0])
-            
-    path = "/tmp/etc-hosts"
-    staged_path = md5(path.encode('utf-8')).hexdigest()
-    # updated etc-hosts contains all nodes information,
-    # because these are other nodes which are not Fate component, 
-    # should be include in ect/hosts but hard to distinguish
-    
-    # Both training and serving have container -- redis
-    # based on SINGLE CONCERN PRINICIPLE, these two redis should not merge into one, even they are same
-    # simplily speaking, just treat serving as a new service
-
-    # make etc/hosts for FATE.
-    with open('./'+staged_path, 'r') as input_ect_hosts:
-        etc_hosts = ""
-        # traversing each etc-hosts terms
-        for line in input_ect_hosts:
-            ip, hostname = line.replace("\n","").split(" ")
-            seperate_index = hostname.find('-')
-            nodeid = "hnode_"+hostname[:seperate_index]+"_"+hostname[seperate_index+1:]
-            # if nodeid is in this party, add component sign
-            if nodeid in node_component_dic.keys():
-                etc_hosts += (line.rstrip() +" "+ node_component_dic[nodeid]+"\n")
-            else:
-                etc_hosts += line
-    chdir("..")
-    
-    for component, nodeids in party.items():
-        for nodeid in nodeids:
-            chdir(nodeid)
-            # update Dockerfile
-            with open('./Dockerfile', 'r') as input_dockerfile:
-                dockercontent = input_dockerfile.read()
-            dockerfile = DockerFileTemplates[service][component].format(dockercontent = dockercontent).rstrip()
-            print(dockerfile, file=open('./Dockerfile', 'w'))
-            print("Generating Dockerfile for", nodeid)
-        
-            # update start.sh
-            path = "/start.sh"
-            staged_path = md5(path.encode('utf-8')).hexdigest()
-            with open('./'+staged_path, 'r') as input_start_script:
-                startCommands = input_start_script.read().rstrip()
-            startScript = StartScriptTemplates[service][component].format(startCommands = startCommands).rstrip()
-            print(startScript, file=open(staged_path, 'w'))
-            print("Generating start.sh for", nodeid)
-        
-            # update /etc/hosts
-            path = "/tmp/etc-hosts"
-            staged_path = md5(path.encode('utf-8')).hexdigest()
-            print(etc_hosts, file=open(staged_path, 'w'))
-            print("Generating /etc/hosts for", nodeid)
-
-            # update /interface_setup
-            path = "/interface_setup"
-            staged_path = md5(path.encode('utf-8')).hexdigest()
-            print(InterfaceSetupTemplate, file=open(staged_path, 'w'))
-            print("Generating /interface_setup for", nodeid)
-            chdir('..')
-
-    # generate parties.conf content
-    build_conf[service][partyid] = {}
-    skeleton_subnets = set()
-    
-    # TODO
-    # for now only support each component corresponding to one container
-    # although above component has a nodeids list 
-    # in future, build_conf[service][partyid][component]=[{}, {}] instead of build_conf[service][partyid][component]={} for now
-    for component, nodeids in party.items():
-        nodeid = nodeids[0]
-        component_build ={}
-        
-        current_path = getcwd()
-        component_build["build_file_path"] = current_path + "/" + nodeid
-        
-        component_build["build_folder"] = "./" + component
-        
-        component_build["ip"]= ghostnode_dic[nodeid]["Interfaces"][0]["Address"]
-        
-        # TODO may need to discuss the detail more
-        skeleton_subnet = "output_net_"+str(ghostnode_dic[nodeid]['Autonomous_Systems'])+"_"\
-                          +ghostnode_dic[nodeid]["Interfaces"][0]["Connected_to"]
-        component_build["skeleton_subnet"]= skeleton_subnet
-        skeleton_subnets.add(skeleton_subnet)
-        
-        build_conf[service][partyid][component]=component_build
-        
-        if service =="training" and component =="proxy":
-            partylist.append(partyid)
-            partyiplist.append(component_build["ip"])
-        elif service =="serving" and component =="serving-proxy":
-            servingiplist.append(component_build["ip"])
-        
-    build_conf[service][partyid]["skeleton_subnets"] = list(skeleton_subnets)
-
 
 with open('./pre_party_list.json', 'r') as arch_json:
-    service_arch_data = json.load(arch_json)
+    arch_datas = json.load(arch_json)
 
 chdir("ghost")
 
@@ -429,20 +322,119 @@ with open('./GhostNodes.json', 'r') as ghostnodes_json:
 ghostnode_dic = {}
 for ghostnode in ghostnodes:
     ghostnode_dic[ghostnode["NodeId"]] = ghostnode
-    
+
 # information for build docker-compose.yml
 build_conf={}
-# information for FATE original parties.conf 
+# information for FATE original parties.conf
 partylist = []
 partyiplist = []
 servingiplist = []
 
 # here service means training or serving
-for service, arch_data in service_arch_data.items():
-    build_conf[service] = {}
+for service, arch_data in arch_datas.items():
     for partyid, party in arch_data.items():
-        generate_party_conf(service, partyid, party)
+        node_component_dic = {}
+        for component, nodeids in party.items():
+            for nodeid in nodeids:
+                node_component_dic[nodeid]=component
 
+        # generate /etc/hosts for this party
+        # go into any one component of this party
+        chdir(list(party.values())[0][0])
+
+        path = "/tmp/etc-hosts"
+        staged_path = md5(path.encode('utf-8')).hexdigest()
+        # updated etc-hosts contains all nodes information,
+        # because these are other nodes which are not Fate component, e.g. routers
+        # should be include in ect/hosts but hard to distinguish
+
+        # Both training and serving have container -- redis
+        # based on SINGLE CONCERN PRINICIPLE, these two redis should not merge into one, even they are same
+        # simplily speaking, just treat serving as a new service
+
+        # make etc/hosts for FATE training/serving.
+        with open('./'+staged_path, 'r') as input_ect_hosts:
+            etc_hosts = ""
+            # traversing each etc-hosts terms
+            for line in input_ect_hosts:
+                ip, hostname = line.replace("\n","").split(" ")
+                seperate_index = hostname.find('-')
+                nodeid = "hnode_"+hostname[:seperate_index]+"_"+hostname[seperate_index+1:]
+                # if nodeid is in this party, add component sign
+                if nodeid in node_component_dic.keys():
+                    etc_hosts += (line.rstrip() +" "+ node_component_dic[nodeid]+"\n")
+                else:
+                    etc_hosts += line
+
+        chdir("..")
+    
+        for component, nodeids in party.items():
+            for nodeid in nodeids:
+                chdir(nodeid)
+                # update Dockerfile
+                with open('./Dockerfile', 'r') as input_dockerfile:
+                    dockercontent = input_dockerfile.read()
+                dockerfile = DockerFileTemplates[component].format(dockercontent = dockercontent).rstrip()
+                print(dockerfile, file=open('./Dockerfile', 'w'))
+                print("Generating Dockerfile for", nodeid)
+        
+                # update start.sh
+                path = "/start.sh"
+                staged_path = md5(path.encode('utf-8')).hexdigest()
+                with open('./'+staged_path, 'r') as input_start_script:
+                    startCommands = input_start_script.read().rstrip()
+                startScript = StartScriptTemplates[component].format(startCommands = startCommands).rstrip()
+                print(startScript, file=open(staged_path, 'w'))
+                print("Generating start.sh for", nodeid)
+    
+                # update /etc/hosts
+                path = "/tmp/etc-hosts"
+                staged_path = md5(path.encode('utf-8')).hexdigest()
+                print(etc_hosts, file=open(staged_path, 'w'))
+                print("Generating /etc/hosts for", nodeid)
+
+                # update /interface_setup
+                path = "/interface_setup"
+                staged_path = md5(path.encode('utf-8')).hexdigest()
+                print(InterfaceSetupTemplate, file=open(staged_path, 'w'))
+                print("Generating /interface_setup for", nodeid)
+                chdir('..')
+
+        # generate parties.conf content
+        build_conf[partyid] = {}
+        skeleton_subnets = set()
+    
+        partylist.append(partyid)
+    
+        # TODO
+        # for now only support each component corresponding to one container
+        # although above component has a nodeids list 
+        # in future, build_conf[partyid][component]=[{}, {}] instead of build_conf[partyid][component]={} for now
+        for component, nodeids in party.items():
+            nodeid = nodeids[0]
+            component_build ={}
+            
+            current_path = getcwd()
+            component_build["build_file_path"] = current_path + "/" + nodeid
+        
+            component_build["build_folder"] = "./" + component
+        
+            component_build["ip"]= ghostnode_dic[nodeid]["Interfaces"][0]["Address"]
+        
+            # TODO may need to discuss the detail more
+            skeleton_subnet = "output_net_"+str(ghostnode_dic[nodeid]['Autonomous_Systems'])+"_"\
+                              +ghostnode_dic[nodeid]["Interfaces"][0]["Connected_to"]
+            component_build["skeleton_subnet"]= skeleton_subnet
+            skeleton_subnets.add(skeleton_subnet)
+        
+            build_conf[partyid][component]=component_build
+        
+            if component =="proxy":
+                partyiplist.append(component_build["ip"])
+            if component =="serving-proxy":
+                servingiplist.append(component_build["ip"])
+        
+        build_conf[partyid]["skeleton_subnets"] = list(skeleton_subnets)
 
 build_conf_json = json.dumps(build_conf, indent=4)
 print("Generating parties.conf...")
