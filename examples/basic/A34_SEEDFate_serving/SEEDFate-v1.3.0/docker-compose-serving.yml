@@ -43,7 +43,7 @@ services:
     image: "redis:5-PARTY_ID"
     expose:
       - 6379
-    command: redis-server --requirepass fate_dev
+    # command: redis-server --requirepass fate_dev
     volumes:
       - ./confs/redis/data:/data
     networks:

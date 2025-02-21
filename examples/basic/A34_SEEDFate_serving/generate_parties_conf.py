@@ -215,7 +215,7 @@ StartScriptTemplates["serving"]['redis'] = """\
 #!/bin/bash
 {startCommands}
 
-redis-server --requirepass fate_dev
+docker-entrypoint.sh redis-server --requirepass fate_dev
 
 tail -f /dev/null
 """
@@ -405,7 +405,7 @@ def generate_party_conf(service, partyid, party):
         if service =="training" and component =="proxy":
             partylist.append(partyid)
             partyiplist.append(component_build["ip"])
-        elif service =="serving" and component =="serving-proxy":
+        elif service =="serving" and component =="serving-server":
             servingiplist.append(component_build["ip"])
         
     build_conf[service][partyid]["skeleton_subnets"] = list(skeleton_subnets)

@@ -27,7 +27,7 @@ GenerateConfig() {
     
         eval party_id=\${partylist[${i}]}
         eval party_ip=\${partyiplist[${i}]}
-        eval serving_ip=\${servingiplist[${i}]}
+        eval serving_ip=\${servingserveriplist[${i}]}
     
         eval processor_port=50000
 	# TODO
