@@ -1019,7 +1019,7 @@ class Docker(Compiler):
                 )
             else:
                 reservation_gpu = DockerCompilerFileTemplates["deploy_gpu"].format(
-                    gpu_count = str(node.getGPUAccess()["gpu_count"])
+                    gpu_count = node.getGPUAccess()["gpu_count"]
                 )
         
         # CPU

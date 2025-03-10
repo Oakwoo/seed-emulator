@@ -262,7 +262,7 @@ class Node(Printable, Registrable, Configurable, Vertex):
     # Hardware fine-grain control
     __gpuAccess: bool # flag parameter that enable GPU access
     
-    __gpu_count: int # the number of GPUs the node can use
+    __gpu_count: str # the number of GPUs the node can use or the value 'all'
     
     __gpuDeviceIds: List[str] # GPU access specific devices
     
@@ -504,9 +504,11 @@ class Node(Printable, Registrable, Configurable, Vertex):
                 
                 self.__gpuDeviceIds = deviceIds
             else:
-                if count == None: # if no specify, the default setting is gpu_count =1
-                    count = 1
-                self.__gpu_count = count
+                if count == None: # if no specify, the default setting is gpu_count = all
+                    self.__gpu_count = 'all'
+                else:
+                    assert count > 0, "The number of GPU devices should be positive."
+                    self.__gpu_count = str(count)
         return self
 
     def getGPUAccess(self) -> bool:
