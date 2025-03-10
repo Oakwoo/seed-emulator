@@ -123,7 +123,7 @@ DockerCompilerFileTemplates['compose_service'] = """\
     {nodeId}:
         build: ./{nodeId}
         container_name: {nodeName}
-{gpuAccess}
+{deploy}
         depends_on:
             - {dependsOn}
         cap_add:
@@ -139,16 +139,43 @@ DockerCompilerFileTemplates['compose_service'] = """\
 {labelList}
 """
 
-DockerCompilerFileTemplates['gpu_Access'] = """\
+DockerCompilerFileTemplates['deploy'] = """\
         deploy:
             resources:
+{reservations}{limits}
+"""
+
+DockerCompilerFileTemplates['deploy_reservations'] = """\
                 reservations:
+{cpu}{memory}{devices}
+"""
+
+DockerCompilerFileTemplates['deploy_limits'] = """\
+                limits:
+{cpu}{memory}
+"""
+
+DockerCompilerFileTemplates['deploy_cpus'] = """\
+                    cpus: {cpus_resource}
+"""
+
+DockerCompilerFileTemplates['deploy_memory'] = """\
+                    memory: {memory_resource}
+"""
+
+DockerCompilerFileTemplates['deploy_gpu'] = """\
                     devices:
                         - driver: nvidia
-                          count: 1
+                          count: {gpu_count}
                           capabilities: [gpu]
 """
 
+DockerCompilerFileTemplates['deploy_gpu_devices'] = """\
+                    devices:
+                        - driver: nvidia
+                          device_ids: {gpu_device_ids}
+                          capabilities: [gpu]
+"""
 
 DockerCompilerFileTemplates['compose_label_meta'] = """\
             org.seedsecuritylabs.seedemu.meta.{key}: "{value}"
@@ -973,11 +1000,80 @@ class Docker(Compiler):
         )
 
         name = sub(r'[^a-zA-Z0-9_.-]', '_', name)
+        
+        # construct deployment information for yml
+        deploy = ''
+        reservations = ''
+        limits = ''
+        
+        # first construct reservation part
+        reservation_gpu = ''
+        reservation_cpu = ''
+        reservation_memory = ''
+        
+        # GPU
+        if node.getGPUAccess()["status"] == True:
+            if node.getGPUAccess()["deviceIds"] != None:
+                reservation_gpu = DockerCompilerFileTemplates["deploy_gpu_devices"].format(
+                    gpu_device_ids = str(node.getGPUAccess()["deviceIds"])
+                )
+            else:
+                reservation_gpu = DockerCompilerFileTemplates["deploy_gpu"].format(
+                    gpu_count = str(node.getGPUAccess()["gpu_count"])
+                )
+        
+        # CPU
+        if node.getCPUResource()["reservation"] != None:
+            reservation_cpu = DockerCompilerFileTemplates["deploy_cpus"].format(
+                cpus_resource = "'"+str(node.getCPUResource()["reservation"])+"'"
+            )
+  
+        # memory
+        if node.getMemoryResource()["reservation"] != None:
+            reservation_memory = DockerCompilerFileTemplates["deploy_memory"].format(
+                memory_resource = node.getMemoryResource()["reservation"]
+            )
+        
+        if reservation_gpu != '' or reservation_cpu != '' or reservation_memory != '':
+            reservations = DockerCompilerFileTemplates['deploy_reservations'].format(
+                cpu = reservation_cpu,
+                memory = reservation_memory,
+                devices = reservation_gpu
+            )
+            
+        # Then construct limit part
+        limit_cpu = ''
+        limit_memory = ''
+        
+        # CPU
+        if node.getCPUResource()["limit"] != None:
+            limit_cpu = DockerCompilerFileTemplates["deploy_cpus"].format(
+                cpus_resource = "'"+str(node.getCPUResource()["limit"])+"'"
+            )
+  
+        # memory
+        if node.getMemoryResource()["limit"] != None:
+            limit_memory = DockerCompilerFileTemplates["deploy_memory"].format(
+                memory_resource = node.getMemoryResource()["limit"]
+            )
+        
+        if limit_cpu != '' or limit_memory != '':
+            limits = DockerCompilerFileTemplates['deploy_limits'].format(
+                cpu = limit_cpu,
+                memory = limit_memory,
+            )
+        
+        # merge reservations and limits together
+        if reservations != '' or limits != '':
+            deploy = DockerCompilerFileTemplates['deploy'].format(
+                reservations = reservations,
+                limits = limits
+            )
 
         return DockerCompilerFileTemplates['compose_service'].format(
             nodeId = real_nodename,
             nodeName = name,
-            gpuAccess = DockerCompilerFileTemplates['gpu_Access'] if node.getGPUAccess() else '',
+            deploy = deploy,
             dependsOn = md5(image.getName().encode('utf-8')).hexdigest(),
             networks = node_nets,
             # privileged = 'true' if node.isPrivileged() else 'false',

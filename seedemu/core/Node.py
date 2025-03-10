@@ -258,8 +258,21 @@ class Node(Printable, Registrable, Configurable, Vertex):
 
     __geo: Tuple[float,float,str] # (Latitude,Longitude,Address) -- optional parameter that contains the geographical location of the Node
     __note: str # optional parameter that contains a note about the Node
-
+    
+    # Hardware fine-grain control
     __gpuAccess: bool # flag parameter that enable GPU access
+    
+    __gpu_count: int # the number of GPUs the node can use
+    
+    __gpuDeviceIds: List[str] # GPU access specific devices
+    
+    __cpuReservation: float # CPU resource reservation
+    
+    __cpuLimit: float # CPU resource limitation
+    
+    __memoryReservation: str # memory resource reservation
+    
+    __memoryLimit: str # memory resource limitation
 
     def __init__(self, name: str, role: NodeRole, asn: int, scope: str = None):
         """!
@@ -307,6 +320,12 @@ class Node(Printable, Registrable, Configurable, Vertex):
         self.__note = None
 
         self.__gpuAccess = False
+        self.__gpu_count = None
+        self.__gpuDeviceIds = None
+        self.__cpuReservation = None
+        self.__cpuLimit = None
+        self.__memoryReservation = None
+        self.__memoryLimit = None
 
     def configure(self, emulator: Emulator):
         """!
@@ -466,7 +485,7 @@ class Node(Printable, Registrable, Configurable, Vertex):
         """
         return self.__privileged
 
-    def setGPUAccess(self, gpuAccess: bool) -> Node:
+    def setGPUAccess(self, gpuAccess: bool, count: int = None, deviceIds: List[str] = None ) -> Node:
         """!
         @brief Set or unset GPU devices access status of the node
 
@@ -475,6 +494,19 @@ class Node(Printable, Registrable, Configurable, Vertex):
         @returns self, for chaining API calls.
         """
         self.__gpuAccess = gpuAccess
+        if gpuAccess == False:
+            assert count == None, "gpuAccess has to be True to set gpu count"
+            assert deviceIds == None, "gpuAccess has to be True to set device ids"
+        else:
+            if deviceIds != None:
+                assert count == None, "You cannot set gpu count and device ids at same time."
+                assert deviceIds != [], "device ids list cannot be empty"
+                
+                self.__gpuDeviceIds = deviceIds
+            else:
+                if count == None: # if no specify, the default setting is gpu_count =1
+                    count = 1
+                self.__gpu_count = count
         return self
 
     def getGPUAccess(self) -> bool:
@@ -483,7 +515,55 @@ class Node(Printable, Registrable, Configurable, Vertex):
 
         @returns True if node can access GPU devices.
         """
-        return self.__gpuAccess
+        return {"status": self.__gpuAccess, "gpu_count": self.__gpu_count, "deviceIds": self.__gpuDeviceIds}
+        
+    def setCPUResource(self, reservation: float = None, limit: float = None) -> Node:
+        """!
+        @brief set CPU resource constrain of the node
+
+        @param reservation: how much cpu power can be at least used
+        
+        @param limits: how much cpu power can be at most used 
+
+        @returns self, for chaining API calls.
+        """
+        if reservation != None:
+            self.__cpuReservation = reservation
+        if limit != None:
+            self.__cpuLimit = limit
+        return self
+
+    def getCPUResource(self) -> dict:
+        """!
+        @brief get the cpu resource information of the node 
+
+        @returns dictionary about CPU resource of node.
+        """
+        return {"reservation": self.__cpuReservation, "limit": self.__cpuLimit}
+        
+    def setMemoryResource(self, reservation: str = None, limit: str = None) -> Node:
+        """!
+        @brief set memory resource constrain of the node
+
+        @param reservation: how much memory can be at least used
+        
+        @param limits: how much memory can be at most used 
+
+        @returns self, for chaining API calls.
+        """
+        if reservation != None:
+            self.__memoryReservation = reservation
+        if limit != None:
+            self.__memoryLimit = limit
+        return self
+
+    def getMemoryResource(self) -> dict:
+        """!
+        @brief get the memory information of the node 
+
+        @returns dictionary about memory of node.
+        """
+        return {"reservation": self.__memoryReservation, "limit": self.__memoryLimit}
 
     def setBaseSystem(self, base_system: BaseSystem) -> Node:
         """!
