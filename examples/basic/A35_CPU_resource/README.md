@@ -11,6 +11,7 @@ It will return an `Node` instance on success.
 
 The `Node::setMemoryResource()` API takes two optional parameters, `reservation`,
 which is the memory requirement of this host, `limit`, which is the limitation of memory of this host.
+The value must be in the form of an integer followed by a qualifier, either 'G' or 'M' that specifies the value in Gigabyte or Megabyte respectively.
 It will return an `Node` instance on success. 
  
  ```python
