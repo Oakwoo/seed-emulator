@@ -71,9 +71,9 @@ Sat Mar 15 21:33:55 2025
 +---------------------------------------------------------------------------------------+
 ```
 
-## Turn on MPS server
+## Turn on MPS
 
-Now we start the MPS server first, and repeat the test again.
+This time, we start the MPS first, and repeat the test again.
 
 To turn on the MPS, we create the folder for MPS pipes and log files
 ```shell-script
@@ -89,17 +89,24 @@ $ export CUDA_MPS_LOG_DIRECTORY=/tmp/mps_log_0
 ```
 
 
-Next, run the following command to set the GPU's compute mode to `exclusive execution mode` (which will be reset to `DEFAULT` after each reboot), and start the MPS server.
+Next, run the following command to set the GPU's compute mode to `exclusive execution mode`
+(which will be reset to `DEFAULT` after each reboot), and start the **MPS control daemon**.
 ```shell-script
 $ sudo nvidia-smi -i 0 -c EXCLUSIVE_PROCESS
-  Set compute mode to EXCLUSIVE_PROCESS for GPU 00000000:00:1E.0.
-  All done.
+Set compute mode to EXCLUSIVE_PROCESS for GPU 00000000:00:1E.0.
+All done.
 $ nvidia-cuda-mps-control -d
 ```
+Once the control daemon is ready, we can find the active process using the `ps` command.
+```shell-script
+$ ps -ef | grep mps
+seed        2586       1  0 00:39 ?        00:00:00 nvidia-cuda-mps-control -d
+```
+
 
 ## Run test application with MPS
 
-Once the server is ready, we run the test and observe that all applications take the same amount of time to run, because the kernels are running concurrently, due to MPS.
+We run the test and observe that all applications take the same amount of time to run, because the kernels are running concurrently, due to MPS.
 ```shell-script
 $ bash mps_run
 kernel duration: 1.617125s
@@ -113,9 +120,8 @@ we see that both apps take the same amount of time to run ( ~ `KERNEL_TIME`), be
 
 
 we check the kernel information about these 5 processes using `nvidia-smi` again.
-Type displayed as ?C? for Compute Process, while the type ?M+C? shows that all the processes are running under the scheduling of MPS.
-
-
+We can find the running MPS server, which is displayed as type "C" for Compute Process,
+and 5 running ./MPS_test processes where the type "M+C" indicates that all the processes are being scheduled by MPS.
 ```shell-script
 $ nvidia-smi
 Sat Mar 15 21:36:13 2025
@@ -148,17 +154,19 @@ Sat Mar 15 21:36:13 2025
 
 So far, by comparing the running times without and with MPS, we have verified that MPS enables multiple GPU applications to run concurrently on a single GPU.
 
-## Turn off MPS server
+## Turn off MPS
 
-For shutting it down the MPS server:
+To shut down the MPS control daemon, use the following commands. The daemon will shut down the servers before exiting:
 ```shell-script
 $ echo quit | nvidia-cuda-mps-control
 $ sudo nvidia-smi -i 0 -c DEFAULT
 ```
-You must use the same terminal where the MPS server was started to shut it down. otherwise, you may receive the error like following:
+The system targets the corresponding MPS control daemon instance by looking up the PID stored
+in `nvidia-cuda-mps-control.pid` file, located in the CUDA_MPS_PIPE_DIRECTORY folder.
+Thus, you must use the terminal where MPS environment variables are set to shut it down, otherwise, you may receive the error like following:
 ```shell-script
 $ echo quit | nvidia-cuda-mps-control
-  Cannot find MPS control daemon process
+Cannot find MPS control daemon process
 ```
 Note, the command does not forcibly turn off the MPS. If the server is still running, you can shut it down by using `sudo kill <PID>` to terminate the service.
 
@@ -237,7 +245,8 @@ In this case, CUDA driver version 10.1 mismatch with the nvidia module NVML 570.
  Then the problem boils down to common problem #1. You can follow the provided solution to resolve it.
 
 * ### Segmentation fault
-When you launch multiple test applications **without** MPS using the bash script `mps_run`, if you got segmentation fault error like following:
+A segmentation fault typically occurs when multiple processes are running on the GPU while the GPU's compute mode is set to `exclusive execution mode`.
+  * When you launch multiple test applications **without** MPS using the bash script `mps_run`, if you got segmentation fault error like following:
 ```shell-script
 $ bash mps_run
 mps_run: line 3:  3067 Segmentation fault      (core dumped) ./MPS_test
@@ -245,10 +254,25 @@ mps_run: line 3:  3067 Segmentation fault      (core dumped) ./MPS_test
 This issue occurs because the GPU's compute mode is accidentally set to `exclusive execution mode`. Under this mode, GPU allows only a single process can run on the GPU at a time.
 Thus, once a test applications is running on the GPU, the rest applications will be terminate because CUDA-capable device(s) is/are busy.
 
- To solve the issue, we simply need to change the mode to `DEFAULT`. This will allow multiple processes to share the GPU resources. You can do this using the following command:
+   To solve the issue, we simply need to change the mode to `DEFAULT`. This will allow multiple processes to share the GPU resources. You can do this using the following command:
 ```shell-script
 $ nvidia-smi -i 0 -c DEFAULT
 ```
+ * Even **with** the MPS server running, launching bash script without setting the environment variables ahead will result in the following error:
+```shell-script
+$ bash mps_run
+mps_run: line 2:  3383 Segmentation fault      (core dumped) ./MPS_test
+mps_run: line 2:  3384 Segmentation fault      (core dumped) ./MPS_test
+mps_run: line 2:  3385 Segmentation fault      (core dumped) ./MPS_test
+```
+The reason is the same: without setting these variables, the program will run independently, conflicting with the `exclusive execution mode`.
+To solve this, you need to set the environment variables.
+```shell-script
+$ export CUDA_VISIBLE_DEVICES=0
+$ export CUDA_MPS_PIPE_DIRECTORY=/tmp/mps_0
+$ export CUDA_MPS_LOG_DIRECTORY=/tmp/mps_log_0
+```
+
 
 * ### CUDA-capable device(s) is/are busy or unavailable
 During the test application run **with** MPS, if you launch multiple test applications from **multiple terminals**, it is essential to set the environment variables in **each** terminal.
@@ -275,11 +299,11 @@ To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other ope
 2025-03-14 01:38:55.122922: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Could not find TensorRT
 ```
 It still doens't work after I install TensorFlowRT using `pip3 install nvidia-tensorrt` or `pip3 install tensorflow[and-cuda]`
-based on @arivero's answer in https://stackoverflow.com/questions/75614728/cuda-12-tf-nightly-2-12-could-not-find-cuda-drivers-on-your-machine-gpu-will,
+based on [@arivero's answer](https://stackoverflow.com/questions/75614728/cuda-12-tf-nightly-2-12-could-not-find-cuda-drivers-on-your-machine-gpu-will),
 The main reason is that as of March 2023, the only tensorflow distribution for cuda 12 is the docker package from NVIDIA.
 The solutoin should be install docker with the nvidia cloud instructions and run one of the recent containers
 
- Thus, I go to Nvidia's offcial webset about Tensorflow, https://catalog.ngc.nvidia.com/orgs/nvidia/containers/tensorflow
+ Thus, I go to [Nvidia's offcial webset about Tensorflow](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/tensorflow).
 I find a lasted AMD64 version docker image, and run following commands:
 ```
 docker run --gpus all -it --rm nvcr.io/nvidia/tensorflow:25.02-tf2-py3
@@ -338,6 +362,28 @@ Here we briefly conclude the process of CPU changes and explain the reasons behi
 
    As mentioned in lewisreg's comments, change the time limit condition to the loop condition `(loop_count<MAX_COUNT)` will yield the expected behavior.
   When verifying this, we found that the empty loops were "optimized out" by the compiler, resulting in a very short running time (~ 0.17 seconds).
+
+   We can use the `nvprof` command to check the details. It shows that the GPU kernel
+  itself takes only 1.18 �s, while the 98% of the time is spent on `cudaLaunchKernel` during the preparation stage.
+  ```
+  $ nvprof ./empty_loop
+==4202== NVPROF is profiling process 4202, command: ./empty_loop
+kernel duration: 0.333002s
+==4202== Profiling application: ./empty_loop
+==4202== Profiling result:
+            Type  Time(%)      Time     Calls       Avg       Min       Max  Name
+ GPU activities:  100.00%  1.1840us         1  1.1840us  1.1840us  1.1840us  delay_kernel(unsigned int)
+      API calls:   98.01%  143.52ms         1  143.52ms  143.52ms  143.52ms  cudaLaunchKernel
+                    1.97%  2.8835ms       114  25.293us     151ns  1.5796ms  cuDeviceGetAttribute
+                    0.01%  11.144us         1  11.144us  11.144us  11.144us  cuDeviceGetName
+                    0.00%  6.2030us         1  6.2030us  6.2030us  6.2030us  cuDeviceGetPCIBusId
+                    0.00%  3.9760us         1  3.9760us  3.9760us  3.9760us  cudaDeviceSynchronize
+                    0.00%  2.3680us         3     789ns     265ns  1.7970us  cuDeviceGetCount
+                    0.00%     772ns         2     386ns     170ns     602ns  cuDeviceGet
+                    0.00%     571ns         1     571ns     571ns     571ns  cudaGetLastError
+                    0.00%     465ns         1     465ns     465ns     465ns  cuDeviceTotalMem
+                    0.00%     374ns         1     374ns     374ns     374ns  cuModuleGetLoadingMode
+  ```
   Running 5 app instances simultaneously without MPS causes the app instances to take 5 times longer (~ 0.84 seconds) than running a single process.
   However, running with MPS introduces extra time to set context compared to directly sending tasks to the GPU.
   This overhead becomes critical when the running time is extremely short, making the total running
@@ -443,3 +489,4 @@ because all SM has been occupied by one process.
 When CPU is running, GPU is idle when we run single process.
 In multiple processes case, when CPU runs process A, GPU runs process B, then CPU runs process B, GPU runs process A. looks like they are running concurrently.
 -->
+
