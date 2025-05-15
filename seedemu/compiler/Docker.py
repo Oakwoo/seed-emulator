@@ -103,6 +103,7 @@ services:
 {services}
 networks:
 {networks}
+{volumes}
 """
 
 DockerCompilerFileTemplates['compose_dummy'] = """\
@@ -135,6 +136,7 @@ DockerCompilerFileTemplates['compose_service'] = """\
         privileged: true
         networks:
 {networks}{ports}{volumes}
+{ipc}
         labels:
 {labelList}
 """
@@ -177,6 +179,10 @@ DockerCompilerFileTemplates['deploy_gpu_devices'] = """\
                           capabilities: [gpu]
 """
 
+DockerCompilerFileTemplates['compose_ipc'] = """\
+        ipc: {mode}
+"""
+
 DockerCompilerFileTemplates['compose_label_meta'] = """\
             org.seedsecuritylabs.seedemu.meta.{key}: "{value}"
 """
@@ -203,6 +209,34 @@ DockerCompilerFileTemplates['compose_volume'] = """\
 
 DockerCompilerFileTemplates['compose_storage'] = """\
             - {nodePath}
+"""
+
+DockerCompilerFileTemplates['compose_named_volume'] = """\
+            - {volume_name}:{nodePath}
+"""
+
+DockerCompilerFileTemplates['volumes'] = """\
+volumes:
+{volumeList}
+"""
+
+DockerCompilerFileTemplates['volume'] = """\
+    {volume_name}:
+{name}{external}{driver_opts}
+"""
+
+DockerCompilerFileTemplates['volume_name'] = """\
+        name: {name}
+"""
+
+DockerCompilerFileTemplates['volume_external'] = """\
+        external: true
+"""
+
+DockerCompilerFileTemplates['volume_driver_opts'] = """\
+        driver_opts:
+            type: {driver_opts_type}
+            device: {driver_opts_device}
 """
 
 DockerCompilerFileTemplates['compose_service_network'] = """\
@@ -243,6 +277,30 @@ DockerCompilerFileTemplates['seedemu_ether_view'] = """\
             - /var/run/docker.sock:/var/run/docker.sock
         ports:
             - {clientPort}:5000/tcp
+"""
+
+DockerCompilerFileTemplates['nvidia_mps'] = """\
+    mps_daemon:
+        container_name: mps-daemon
+        deploy:
+            resources:
+                reservations:
+                    devices:
+                        - driver: nvidia
+                          count: 1
+                          capabilities: [gpu]
+        image: nvidia/cuda:12.3.1-base-ubuntu20.04
+        ipc: shareable
+        environment:
+          - CUDA_VISIBLE_DEVICES=0
+          - CUDA_MPS_PIPE_DIRECTORY=/tmp/mps_0
+          - CUDA_MPS_LOG_DIRECTORY=/tmp/mps_log_0
+        command: bash -c "nvidia-smi -i 0 -c EXCLUSIVE_PROCESS && nvidia-cuda-mps-control -d && tail -f /dev/null"
+        volumes: 
+          - mps_0:/tmp/mps_0
+          - mps_log_0:/tmp/mps_log_0
+        cap_add:
+            - ALL
 """
 
 DockerCompilerFileTemplates['zshrc_pre'] = """\
@@ -341,6 +399,8 @@ class Docker(Compiler):
 
     __services: str
     __networks: str
+    __volumes: str
+    __volumes_info: Dict[str, Dict]
     __naming_scheme: str
     __self_managed_network: bool
     __dummy_network_pool: Generator[IPv4Network, None, None]
@@ -350,6 +410,8 @@ class Docker(Compiler):
 
     __ether_view_enabled: bool
     __ether_view_port: int
+    
+    __nvidia_mps_enabled: bool
 
     __client_hide_svcnet: bool
 
@@ -409,6 +471,8 @@ class Docker(Compiler):
         """
         self.__networks = ""
         self.__services = ""
+        self.__volumes = ""
+        self.__volumes_info = {}
         self.__naming_scheme = namingScheme
         self.__self_managed_network = selfManagedNetwork
         self.__dummy_network_pool = IPv4Network(dummyNetworksPool).subnets(new_prefix = dummyNetworksMask)
@@ -418,6 +482,8 @@ class Docker(Compiler):
 
         self.__ether_view_enabled = etherViewEnabled
         self.__ether_view_port = etherViewPort
+        
+        self.__nvidia_mps_enabled = False
 
         self.__client_hide_svcnet = clientHideServiceNet
 
@@ -909,10 +975,11 @@ class Docker(Compiler):
 
         _volumes = node.getSharedFolders()
         storages = node.getPersistentStorages()
+        named_volumes = node.getVolumeFiles()
 
         volumes = ''
 
-        if len(_volumes) > 0 or len(storages) > 0:
+        if len(_volumes) > 0 or len(storages) > 0 or len(named_volumes) > 0:
             lst = ''
 
             for (nodePath, hostPath) in _volumes.items():
@@ -924,6 +991,12 @@ class Docker(Compiler):
             for path in storages:
                 lst += DockerCompilerFileTemplates['compose_storage'].format(
                     nodePath = path
+                )
+                
+            for (volume_name, volume_info) in named_volumes.items():
+                lst += DockerCompilerFileTemplates['compose_named_volume'].format(
+                    volume_name = volume_name,
+                    nodePath = volume_info["path"],
                 )
 
             volumes = DockerCompilerFileTemplates['compose_volumes'].format(
@@ -1013,6 +1086,9 @@ class Docker(Compiler):
         
         # GPU
         if node.getGPUAccess()["status"] == True:
+            # enable NVIDIA MULTI-PROCESS SERVICE 
+            self.__nvidia_mps_enabled = True
+            
             if node.getGPUAccess()["deviceIds"] != None:
                 reservation_gpu = DockerCompilerFileTemplates["deploy_gpu_devices"].format(
                     gpu_device_ids = str(node.getGPUAccess()["deviceIds"])
@@ -1069,15 +1145,28 @@ class Docker(Compiler):
                 reservations = reservations,
                 limits = limits
             )
+            
+        # set IPC
+        ipc = ''
+        if node.getIPC() != None:
+            ipc = DockerCompilerFileTemplates['compose_ipc'].format(
+                mode = node.getIPC()
+            )
+            
+        # set depends on content
+        dependsOn = ""
+        for __ in node.getDependsOn():
+            dependsOn += ("\n            - " + __)
 
         return DockerCompilerFileTemplates['compose_service'].format(
             nodeId = real_nodename,
             nodeName = name,
             deploy = deploy,
-            dependsOn = md5(image.getName().encode('utf-8')).hexdigest(),
+            dependsOn = md5(image.getName().encode('utf-8')).hexdigest() + dependsOn,
             networks = node_nets,
             # privileged = 'true' if node.isPrivileged() else 'false',
             ports = ports,
+            ipc = ipc,
             labelList = self._getNodeMeta(node),
             volumes = volumes
         )
@@ -1158,22 +1247,32 @@ class Docker(Compiler):
             if type == 'rnode':
                 self._log('compiling router node {} for as{}...'.format(name, scope))
                 self.__services += self._compileNode(obj)
+                # register the volume information into dictionary
+                self.__volumes_info.update(obj.getVolumeFiles())
 
             if type == 'csnode':
                 self._log('compiling control service node {} for as{}...'.format(name, scope))
                 self.__services += self._compileNode(obj)
+                # register the volume information into dictionary
+                self.__volumes_info.update(obj.getVolumeFiles())
 
             if type == 'hnode' and obj.isGhostnode() == False:
                 self._log('compiling host node {} for as{}...'.format(name, scope))
                 self.__services += self._compileNode(obj)
+                # register the volume information into dictionary
+                self.__volumes_info.update(obj.getVolumeFiles())
 
             if type == 'rs':
                 self._log('compiling rs node for {}...'.format(name))
                 self.__services += self._compileNode(obj)
+                # register the volume information into dictionary
+                self.__volumes_info.update(obj.getVolumeFiles())
 
             if type == 'snode':
                 self._log('compiling service node {}...'.format(name))
                 self.__services += self._compileNode(obj)
+                # register the volume information into dictionary
+                self.__volumes_info.update(obj.getVolumeFiles()) 
 
         if self.__internet_map_enabled:
             self._log('enabling seedemu-internet-map...')
@@ -1190,6 +1289,11 @@ class Docker(Compiler):
                 clientImage = SEEDEMU_ETHER_VIEW_IMAGE,
                 clientPort = self.__ether_view_port
             )
+            
+        if self.__nvidia_mps_enabled:
+            self._log('enabling NVIDIA MULTI-PROCESS SERVICE...')
+
+            self.__services += DockerCompilerFileTemplates['nvidia_mps']
 
         local_images = ''
 
@@ -1199,10 +1303,35 @@ class Docker(Compiler):
                 imageName = image.getName(),
                 dirName = image.getDirName()
             )
+            
+        # generate docker compose volume part
+        if self.__volumes_info:
+            lst = ''
+            
+            for (volume_name, volume_info) in self.__volumes_info.items():
+                 lst += DockerCompilerFileTemplates['volume'].format(
+                    volume_name = volume_name,
+                    name = DockerCompilerFileTemplates['volume_name'].format(
+                               name = volume_info["name"]
+                           )
+                           if volume_info["name"] != None else "",
+                    external = DockerCompilerFileTemplates['volume_external']
+                               if volume_info["external"] == True else "",
+                    driver_opts = DockerCompilerFileTemplates['volume_driver_opts'].format(
+                                      driver_opts_type = volume_info["driver_opts_type"],
+                                      driver_opts_device = volume_info["driver_opts_device"] 
+                                  )
+                                  if volume_info["driver_opts"] == True else ""
+                )
+                
+            self.__volumes = DockerCompilerFileTemplates['volumes'].format(
+                volumeList = lst
+            )
 
         self._log('creating docker-compose.yml...'.format(scope, name))
         print(DockerCompilerFileTemplates['compose'].format(
             services = self.__services,
             networks = self.__networks,
+            volumes = self.__volumes,
             dummies = local_images + self._makeDummies()
         ), file=open('docker-compose.yml', 'w'))

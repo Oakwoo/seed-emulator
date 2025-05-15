@@ -253,6 +253,7 @@ class Node(Printable, Registrable, Configurable, Vertex):
 
     __shared_folders: Dict[str, str]
     __persistent_storages: List[str]
+    __volumefiles: Dict[str, Dict]
 
     __name_servers: List[str]
 
@@ -266,6 +267,10 @@ class Node(Printable, Registrable, Configurable, Vertex):
     
     __gpuDeviceIds: List[str] # GPU access specific devices
     
+    __gpuActiveThread: int # The maximum percentage (__gpuActiveThread/100) of compute cores.
+    
+    __gpuMemoryLimit: str # The maximum amount of GPU memory
+    
     __cpuReservation: float # CPU resource reservation
     
     __cpuLimit: float # CPU resource limitation
@@ -273,6 +278,10 @@ class Node(Printable, Registrable, Configurable, Vertex):
     __memoryReservation: str # memory resource reservation
     
     __memoryLimit: str # memory resource limitation
+    
+    __ipc: str # Inter-Process Communication mode
+    
+    __dependsOn: List[str] # services should start before this Node
 
     def __init__(self, name: str, role: NodeRole, asn: int, scope: str = None):
         """!
@@ -309,6 +318,7 @@ class Node(Printable, Registrable, Configurable, Vertex):
 
         self.__shared_folders = {}
         self.__persistent_storages = []
+        self.__volumefiles = {}
 
         for soft in DEFAULT_SOFTWARE:
             self.__softwares.add(soft)
@@ -322,10 +332,15 @@ class Node(Printable, Registrable, Configurable, Vertex):
         self.__gpuAccess = False
         self.__gpu_count = None
         self.__gpuDeviceIds = None
+        self.__gpuActiveThread = None
+        self.__gpuMemoryLimit = None
         self.__cpuReservation = None
         self.__cpuLimit = None
         self.__memoryReservation = None
         self.__memoryLimit = None
+        
+        self.__ipc = None
+        self.__dependsOn = []
 
     def configure(self, emulator: Emulator):
         """!
@@ -485,11 +500,15 @@ class Node(Printable, Registrable, Configurable, Vertex):
         """
         return self.__privileged
 
-    def setGPUAccess(self, gpuAccess: bool, count: int = None, deviceIds: List[str] = None ) -> Node:
+    def setGPUAccess(self, gpuAccess: bool, count: int = None, deviceIds: List[str] = None, activeThread: int = None, memoryLimit: str = None ) -> Node:
         """!
         @brief Set or unset GPU devices access status of the node
 
-        @param gpuAccess set if node can access GPU devices.
+        @param gpuAccess Whether the node is allowed to access GPU devices.
+        @param count The number of GPU devices that can be accessed by this node.
+        @param deviceIds The IDs of the GPU devices that this node can access.
+        @param activeThread The maximum percentage of compute cores that can be used by this node.
+        @param memoryLimit The maximum amount of GPU memory that can be used by this node.
 
         @returns self, for chaining API calls.
         """
@@ -509,15 +528,45 @@ class Node(Printable, Registrable, Configurable, Vertex):
                 else:
                     assert count > 0, "The number of GPU devices should be positive."
                     self.__gpu_count = str(count)
+            
+            # NVIDIA MPS is automatically configured and enabled
+            self.enableNvidiaMPS()
+            
+            if memoryLimit != None:
+                self.__gpuMemoryLimit = memoryLimit
+                self.appendStartCommand(f'export CUDA_MPS_PINNED_DEVICE_MEM_LIMIT="{memoryLimit}"')
+
+            if activeThread != None:
+                self.__gpuActiveThread = activeThread
+                self.appendStartCommand(f"export CUDA_MPS_ACTIVE_THREAD_PERCENTAGE={activeThread}")
+            
         return self
 
     def getGPUAccess(self) -> bool:
         """!
         @brief get the GPU devices access status of the node 
 
-        @returns True if node can access GPU devices.
+        @returns GPU informations.
         """
-        return {"status": self.__gpuAccess, "gpu_count": self.__gpu_count, "deviceIds": self.__gpuDeviceIds}
+        return {"status": self.__gpuAccess, "gpu_count": self.__gpu_count, "deviceIds": self.__gpuDeviceIds, "activeThread": self.__gpuActiveThread, "memoryLimit": self.__gpuMemoryLimit}
+        
+    def enableNvidiaMPS(self):
+        """!
+        @brief enable Nvidia Multi-process service
+
+        @returns self, for chaining API calls.
+        """
+        # set the volume folders for MPS pipes and log files
+        self.addVolumeFile("mps_0", "/tmp/mps_0", name="mps_0", driver_opts=True, driver_opts_type="tmpfs", driver_opts_device="tmpfs")
+        self.addVolumeFile("mps_log_0", "/tmp/mps_log_0", name="mps_log_0", driver_opts=True, driver_opts_type="tmpfs", driver_opts_device="tmpfs")
+        # set MPS enviroment variables
+        self.appendStartCommand("export CUDA_VISIBLE_DEVICES=0")
+        self.appendStartCommand("export CUDA_MPS_PIPE_DIRECTORY=/tmp/mps_0")
+        self.appendStartCommand("export CUDA_MPS_LOG_DIRECTORY=/tmp/mps_log_0")
+        # set Inter-Process Communication to Nvidia MPS daemon
+        self.setIPC("container:mps-daemon")
+        self.addDependsOn("mps_daemon")
+    
         
     def setCPUResource(self, reservation: float = None, limit: float = None) -> Node:
         """!
@@ -566,6 +615,48 @@ class Node(Printable, Registrable, Configurable, Vertex):
         @returns dictionary about memory of node.
         """
         return {"reservation": self.__memoryReservation, "limit": self.__memoryLimit}
+        
+    def setIPC(self, mode: str) -> Node:
+        """!
+        @brief set Inter-Process Communication (IPC) mode of the node, if mode is None, mode will be set to private
+
+        @param mode: The IPC mode to set.  
+             - "private": The node has its own isolated IPC namespace (default).
+             - "shareable": The node's IPC namespace can be shared with other containers.
+             - "container:<container_name_or_id>": Share the IPC namespace with the specified container.
+             - "host": Share the IPC namespace with the host system.
+        @returns self, for chaining API calls.
+        """
+        assert (mode in {None, "private", "shareable", "host"} or (mode.startswith("container:") and len(mode) > len("container:")))
+        self.__ipc = mode
+        return self
+
+    def getIPC(self) -> dict:
+        """!
+        @brief get IPC mode of the node 
+
+        @returns ipc mode of node.
+        """
+        return self.__ipc
+        
+    def addDependsOn(self, service_name: str) -> Node:
+        """!
+        @brief Set the dependency order based on the service name.
+
+        @param service_name The service name that this node depends on. The node will wait for the specified service to start before starting itself.
+
+        @returns self, for chaining API calls.
+        """
+        self.__dependsOn.append(service_name)
+        return self
+
+    def getDependsOn(self) -> dict:
+        """!
+        @brief get service names that this node depends on
+
+        @returns list of services which have to start before this node.
+        """
+        return self.__dependsOn 
 
     def setBaseSystem(self, base_system: BaseSystem) -> Node:
         """!
@@ -1001,6 +1092,47 @@ class Node(Printable, Registrable, Configurable, Vertex):
         @returns list of persistent storage folder.
         """
         return self.__persistent_storages
+        
+    def addVolumeFile(self, volume_name: str, path: str, external: bool = False, name: str = None, driver_opts: bool = False, driver_opts_type: str = None, driver_opts_device: str = None) -> Node:
+        """!
+        @brief create a new shared volume folder accessible by multiple nodes.
+
+        This provides finer-grained control over volume files.
+        — Compared to addSharedFolder, which uses a bind mount primarily designed
+        for sharing files between the host and nodes, addVolumeFile focuses on 
+        sharing files among nodes. The file directory is managed by the Docker system
+        under /var/lib/docker/volumes/<volume_name>, and non-Docker processes
+        should not modify this part of the filesystem.
+        
+        — Unlike addPersistentStorage, where the volume name is randomly generated,
+        addVolumeFile allows the volume name to be explicitly specified via a parameter.
+
+        @param volume_name The name of the volume.
+        @param path The mount path inside the container where the volume will be attached.
+        @param external Whether the volume is an existing external volume managed outside
+                        of this Compose project.
+        @param name The name of the volume as recognized by the Docker volume system,
+                    which can be referenced by other containers.
+        @param driver_opts Whether to specify custom driver options for the volume.
+        @param driver_opts_type The type of the mount, such as 'none', 'nfs', or 'tmpfs'.
+        @param driver_opts_device The source device or path to mount, depending on the type.
+
+        @returns self, for chaining API calls.
+        """
+        if driver_opts == True:
+            assert driver_opts_type != None, 'driver_opts type info is required!'
+            assert driver_opts_device != None, 'driver_opts device info is required!'
+        self.__volumefiles[volume_name] = {"path": path, "external": external, "name": name, "driver_opts": driver_opts, "driver_opts_type": driver_opts_type, "driver_opts_device": driver_opts_device}
+
+        return self
+
+    def getVolumeFiles(self) -> Dict[str, Dict]:
+        """!
+        @brief Get volume files information on the node.
+
+        @returns list of volume files.
+        """
+        return self.__volumefiles
     
     def setGeo(self, Lat: float, Long: float, Address: str="") -> Node:
         """!

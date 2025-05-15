@@ -84,7 +84,7 @@ def run(dumpfile = None):
     as152.createHost('web').joinNetwork('net0')
     web.install('web152')
     emu.addBinding(Binding('web152', filter = Filter(nodeName = 'web', asn = 152)))
-    gpuhost = as152.createHost('gpu').setGPUAccess(True, count=1).joinNetwork('net0')
+    gpuhost = as152.createHost('gpu').setGPUAccess(True, count=1, activeThread=5, memoryLimit='0=1G').joinNetwork('net0')
     gpuhost.addSoftware('python3').addSoftware('python3-pip')
     gpuhost.addBuildCommand("pip3 install torch && pip3 install numpy")
     gpuhost.importFile(hostpath = os.path.dirname(os.path.realpath(__file__)) + "/GPUTest.py", containerpath = "/GPUTest.py").importFile(hostpath = os.path.dirname(os.path.realpath(__file__)) + "/GPUTest_Time.py", containerpath = "/GPUTest_Time.py")
