@@ -1023,6 +1023,9 @@ class Docker(Compiler):
         #dockerfile += 'RUN curl -L https://grml.org/zsh/zshrc > /root/.zshrc\n'
         dockerfile = 'FROM {}\n'.format(md5(image.getName().encode('utf-8')).hexdigest()) + dockerfile
         self._used_images.add(image.getName())
+        
+        # loading environment variables to Dockerfile
+        for key, value in node.getEnvironmentVariables().items(): dockerfile += 'ENV {}={}\n'.format(key, value)
 
         for cmd in node.getBuildCommands(): dockerfile += 'RUN {}\n'.format(cmd)
 

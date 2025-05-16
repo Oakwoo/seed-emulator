@@ -238,6 +238,7 @@ class Node(Printable, Registrable, Configurable, Vertex):
     __files: Dict[str, File]
     __imported_files: Dict[str, str]
     __softwares: Set[str]
+    __envs: Dict[str, str] # set environment variables in Dockerfile, will inherit after docker run
     __build_commands: List[str]
     __start_commands: List[Tuple[str, bool]]
     __post_config_commands: List[Tuple[str, bool]]
@@ -304,6 +305,7 @@ class Node(Printable, Registrable, Configurable, Vertex):
         self.__label = {}
         self.__scope = scope if scope != None else str(asn)
         self.__softwares = set()
+        self.__envs = {}
         self.__build_commands = []
         self.__start_commands = []
         self.__post_config_commands = []
@@ -534,11 +536,11 @@ class Node(Printable, Registrable, Configurable, Vertex):
             
             if memoryLimit != None:
                 self.__gpuMemoryLimit = memoryLimit
-                self.appendStartCommand(f'export CUDA_MPS_PINNED_DEVICE_MEM_LIMIT="{memoryLimit}"')
+                self.addEnvironmentVariable("CUDA_MPS_PINNED_DEVICE_MEM_LIMIT", f'"{memoryLimit}"')
 
             if activeThread != None:
                 self.__gpuActiveThread = activeThread
-                self.appendStartCommand(f"export CUDA_MPS_ACTIVE_THREAD_PERCENTAGE={activeThread}")
+                self.addEnvironmentVariable("CUDA_MPS_ACTIVE_THREAD_PERCENTAGE", f'{activeThread}')
             
         return self
 
@@ -559,10 +561,16 @@ class Node(Printable, Registrable, Configurable, Vertex):
         # set the volume folders for MPS pipes and log files
         self.addVolumeFile("mps_0", "/tmp/mps_0", name="mps_0", driver_opts=True, driver_opts_type="tmpfs", driver_opts_device="tmpfs")
         self.addVolumeFile("mps_log_0", "/tmp/mps_log_0", name="mps_log_0", driver_opts=True, driver_opts_type="tmpfs", driver_opts_device="tmpfs")
+        
         # set MPS enviroment variables
-        self.appendStartCommand("export CUDA_VISIBLE_DEVICES=0")
-        self.appendStartCommand("export CUDA_MPS_PIPE_DIRECTORY=/tmp/mps_0")
-        self.appendStartCommand("export CUDA_MPS_LOG_DIRECTORY=/tmp/mps_log_0")
+        # can't use appendStartCommand / addBuildCommand ("export ...")
+        # because addBuildCommand: "RUN export ..." in Dockerfile only affect that particular image layer
+        # appendStartCommand: export will only affect the process started by docker compose
+        # if user use "docksh ..." start a new shell, the enviroment variables will not be inherited.
+        # In Dockerfile, environment variables set using the ENV instruction are "layer-inherited".
+        self.addEnvironmentVariable("CUDA_VISIBLE_DEVICES","0")
+        self.addEnvironmentVariable("CUDA_MPS_PIPE_DIRECTORY","/tmp/mps_0")
+        self.addEnvironmentVariable("CUDA_MPS_LOG_DIRECTORY","/tmp/mps_log_0")
         # set Inter-Process Communication to Nvidia MPS daemon
         self.setIPC("container:mps-daemon")
         self.addDependsOn("mps_daemon")
@@ -953,6 +961,31 @@ class Node(Printable, Registrable, Configurable, Vertex):
         @returns set of softwares.
         """
         return self.__softwares
+    
+    def addEnvironmentVariable(self, key: str, value: str) -> Node:
+        """!
+        @brief Add new environment variable to build step. 
+        This environment variable will be inherited after on when user run "Docker run"
+
+        Use this to add environment variables to the node. For example, if using the
+        "docker" compiler, this will be added as a "ENV" line in Dockerfile.
+
+        @param key environment variable name to add.
+        
+        @param value environment variable value to add.
+
+        @returns self, for chaining API calls.
+        """
+        self.__envs[key] = value
+        return self
+
+    def getEnvironmentVariables(self) -> Dict[str, str]:
+        """!
+        @brief Get environment variables.
+
+        @returns dictionary of environment variables.
+        """
+        return self.__envs
 
     def addBuildCommand(self, cmd: str) -> Node:
         """!
