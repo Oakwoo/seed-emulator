@@ -9,8 +9,9 @@ from hashlib import md5
 from os import mkdir, chdir
 from re import sub
 from ipaddress import IPv4Network, IPv4Address
-from shutil import copyfile
+from shutil import copyfile, copytree
 import json
+import os
 
 
 SEEDEMU_INTERNET_MAP_IMAGE='handsonsecurity/seedemu-multiarch-map:buildx-latest'
@@ -904,7 +905,12 @@ class Docker(Compiler):
         """
 
         staged_path = md5(path.encode('utf-8')).hexdigest()
-        copyfile(hostpath, staged_path)
+        if os.path.isfile(hostpath):
+            copyfile(hostpath, staged_path)
+        elif os.path.isdir(hostpath):
+            copytree(hostpath, staged_path)
+        else:
+            raise FileNotFoundError(f"{path} file doesn't exist!")
         return 'COPY {} {}\n'.format(staged_path, path)
 
     def _compileNode(self, node: Node) -> str:
