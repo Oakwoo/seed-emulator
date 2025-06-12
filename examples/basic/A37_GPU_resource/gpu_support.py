@@ -3,7 +3,7 @@
 
 from seedemu.layers import Base, Routing, Ebgp
 from seedemu.services import WebService
-from seedemu.compiler import Docker, Platform
+from seedemu.compiler import *
 from seedemu.core import Emulator, Binding, Filter
 import sys, os
 
@@ -69,7 +69,7 @@ def run(dumpfile = None):
     as151.createNetwork('net0')
     as151.createRouter('router0').joinNetwork('net0').joinNetwork('ix100')
 
-    as151.createHost('web').setCPUResource(reservation=0.5, limit=0.6).setMemoryResource(reservation='50M', limit='500M').joinNetwork('net0')
+    as151.createHost('web').joinNetwork('net0')
     web.install('web151')
     emu.addBinding(Binding('web151', filter = Filter(nodeName = 'web', asn = 151)))
 
@@ -81,11 +81,16 @@ def run(dumpfile = None):
     as152.createNetwork('net0')
     as152.createRouter('router0').joinNetwork('net0').joinNetwork('ix100')
 
-    gpu_152 = as152.createHost('web').setCPUResource(reservation=0.7, limit=0.9).setMemoryResource(reservation='100M', limit='700M').joinNetwork('net0')
-    gpu_152.importFile(hostpath = os.path.dirname(os.path.realpath(__file__)) + "/processor_count.py", containerpath = "/processor_count.py")
+    as152.createHost('web').joinNetwork('net0')
     web.install('web152')
     emu.addBinding(Binding('web152', filter = Filter(nodeName = 'web', asn = 152)))
-
+    gpuhost = as152.createHost('gpu').setGPUAccess(True, count=1, activeThread=5, memoryLimit='0=1G').joinNetwork('net0')
+    gpuhost.addSoftware('python3').addSoftware('python3-pip')
+    gpuhost.importFile(hostpath = os.path.dirname(os.path.realpath(__file__)) + "/cuda_memory/cuda_memory", containerpath = "/cuda_memory").importFile(hostpath = os.path.dirname(os.path.realpath(__file__)) + "/processor_count/processor_count", containerpath = "/processor_count")
+     
+    gpuhost2 = as152.createHost('gpu2').setGPUAccess(True, deviceIds=['0'], activeThread=15, memoryLimit='0=3G').joinNetwork('net0')
+    gpuhost2.addSoftware('python3').addSoftware('python3-pip')
+    gpuhost2.importFile(hostpath = os.path.dirname(os.path.realpath(__file__)) + "/cuda_memory/cuda_memory", containerpath = "/cuda_memory").importFile(hostpath = os.path.dirname(os.path.realpath(__file__)) + "/processor_count/processor_count", containerpath = "/processor_count")
 
     ###############################################################################
     # Peering these ASes at Internet Exchange IX-100
@@ -108,9 +113,16 @@ def run(dumpfile = None):
     else:
         emu.render()
 
+        imageName = 'nvidia/cuda:12.3.1-base-ubuntu20.04'
+        image  = DockerImage(name=imageName, local=False, software=[])
+        docker = Docker(platform=platform)
+        docker.addImage(image)
+        docker.setImageOverride(gpuhost, imageName)
+        docker.setImageOverride(gpuhost2, imageName)
+         
         ###############################################################################
         # Compilation
-        emu.compile(Docker(platform=platform), './output', override=True)
+        emu.compile(docker, './output', override=True)
 
 if __name__ == '__main__':
     run()
