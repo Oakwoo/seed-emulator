@@ -1068,6 +1068,9 @@ class Docker(Compiler):
         for (cpath, hpath) in node.getImportedFiles().items():
             dockerfile += self._importFile(cpath, hpath)
 
+        # <DELETE> RUN command should be moved after import file, because user may build python environment based on imported file
+        # <DELETE> for cmd in node.getBuildCommands(): dockerfile += 'RUN {}\n'.format(cmd)
+
         dockerfile += 'CMD ["/start.sh"]\n'
         print(dockerfile, file=open('Dockerfile', 'w'))
 
