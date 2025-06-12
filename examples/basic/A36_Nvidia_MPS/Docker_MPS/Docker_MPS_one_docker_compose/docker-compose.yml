@@ -1,0 +1,43 @@
+version: "3.4"
+services:
+    mps_daemon:
+        container_name: mps-daemon
+        build: ./mps_daemon
+        deploy:
+            resources:
+                reservations:
+                    devices:
+                        - driver: nvidia
+                          count: 1
+                          capabilities: [gpu]
+        ipc: shareable
+        volumes: 
+          - mps_0:/tmp/mps_0
+          - mps_log_0:/tmp/mps_log_0
+        cap_add:
+            - ALL
+
+    mps_client:
+        depends_on:
+          - mps_daemon
+        build: ./mps_client
+        deploy:
+            resources:
+                reservations:
+                    devices:
+                        - driver: nvidia
+                          count: 1
+                          capabilities: [gpu]
+        ipc: container:mps-daemon
+        volumes:
+          - mps_0:/tmp/mps_0
+          - mps_log_0:/tmp/mps_log_0
+volumes:
+    mps_0:
+        driver_opts:
+            type: tmpfs
+            device: tmpfs
+    mps_log_0:
+        driver_opts:
+            type: tmpfs
+            device: tmpfs

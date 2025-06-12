@@ -1,0 +1,20 @@
+version: "3.4"
+services:
+    mps_client1:
+        build: ./mps_client
+        deploy:
+            resources:
+                reservations:
+                    devices:
+                        - driver: nvidia
+                          count: 1
+                          capabilities: [gpu]
+        ipc: container:mps-daemon
+        volumes:
+          - mps_0:/tmp/mps_0
+          - mps_log_0:/tmp/mps_log_0
+volumes:
+    mps_0:
+        external: true
+    mps_log_0:
+        external: true

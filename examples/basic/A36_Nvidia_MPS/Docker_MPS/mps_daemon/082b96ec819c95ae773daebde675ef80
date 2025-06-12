@@ -1,5 +1,0 @@
-#!/bin/bash
-nvidia-smi -i 0 -c EXCLUSIVE_PROCESS
-nvidia-cuda-mps-control -d
-tail -f /dev/null
-

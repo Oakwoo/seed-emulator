@@ -87,12 +87,12 @@ def run(dumpfile = None):
     gpuhost = as152.createHost('gpu').setGPUAccess(True, count=1).joinNetwork('net0')
     gpuhost.addSoftware('python3').addSoftware('python3-pip')
     gpuhost.addBuildCommand("pip3 install torch && pip3 install numpy")
-    gpuhost.importFile(hostpath = os.path.dirname(os.path.realpath(__file__)) + "/GPUTest.py", containerpath = "/GPUTest.py").importFile(hostpath = os.path.dirname(os.path.realpath(__file__)) + "/GPUTest_Time.py", containerpath = "/GPUTest_Time.py")
+    #gpuhost.importFile(hostpath = os.path.dirname(os.path.realpath(__file__)) + "/GPUTest.py", containerpath = "/GPUTest.py").importFile(hostpath = os.path.dirname(os.path.realpath(__file__)) + "/GPUTest_Time.py", containerpath = "/GPUTest_Time.py")
      
     gpuhost2 = as152.createHost('gpu2').setGPUAccess(True, deviceIds=['0']).joinNetwork('net0')
     gpuhost2.addSoftware('python3').addSoftware('python3-pip')
     gpuhost2.addBuildCommand("pip3 install torch && pip3 install numpy")
-    gpuhost2.importFile(hostpath = os.path.dirname(os.path.realpath(__file__)) + "/GPUTest.py", containerpath = "/GPUTest.py").importFile(hostpath = os.path.dirname(os.path.realpath(__file__)) + "/GPUTest_Time.py", containerpath = "/GPUTest_Time.py")
+    #gpuhost2.importFile(hostpath = os.path.dirname(os.path.realpath(__file__)) + "/GPUTest.py", containerpath = "/GPUTest.py").importFile(hostpath = os.path.dirname(os.path.realpath(__file__)) + "/GPUTest_Time.py", containerpath = "/GPUTest_Time.py")
 
 
     ###############################################################################
