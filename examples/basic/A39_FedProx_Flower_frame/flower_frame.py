@@ -85,7 +85,7 @@ def run(dumpfile = None):
 
     gpuhost.appendStartCommand(f"source /opt/conda/etc/profile.d/conda.sh && conda activate py310 && export LD_LIBRARY_PATH=$HOME/miniconda3/envs/fedprox/lib/python3.10/site-packages/nvidia/nvjitlink/lib:$LD_LIBRARY_PATH && flower-superlink --insecure", fork=True, isPostConfigCommand=True)
 
-    num_edge_devices = 2
+    num_edge_devices = 10
     gpuhosts_list = {}
     for i in range(num_edge_devices):
         gpuhosts_list[i] = as152.createHost(f'gpu{i}').setGPUAccess(True).joinNetwork('net0')
@@ -125,8 +125,8 @@ def run(dumpfile = None):
     else:
         emu.render()
 
-        imageName = 'flower_base'
-        dirName = './flower_base'
+        imageName = 'fedprox_base'
+        dirName = './fedprox_base'
         image  = DockerImage(name=imageName, dirName=dirName ,local=True, software=[])
         docker = Docker()
         docker.addImage(image)
