@@ -12,18 +12,20 @@ It will return an `Node` instance on success.
  ```python
  as152.createHost('gpu').setGPUAccess(gpuAccess=True, count=1, activeThread=5, memoryLimit='0=1G').joinNetwork('net0')
  ```
-In the above example, we created a host `gpu` with only `5%` of the GPU's streaming multiprocessors, which equals `2` SMs (since the NVIDIA T4 has 40 SMs), and limited it to `1?GB` of GPU memory.
+In the above example, we created a host `gpu` with only `5%` of the GPU's streaming multiprocessors, which equals `2` SMs (since the NVIDIA T4 has 40 SMs), and limited it to `1 GB` of GPU memory.
 
 ## Check if the limits are effective.
-First, we need to find the ID or name of the running container using the `dockps` command. Then, we can use `docksh` to log into the container we just created and run the test program.
+First, we need to find the ID or name of the running container using the `dockps` command. Then, we can use `docksh` to log into the container we just created and run the test program. Note that the only reason we import executable file `processor_count` and `cuda_memory` instead of their python code is because python code depends on heavy library `torch`.
 
 ```shell-script
-$ python3 processor_count.py
+$ chmod +x processor_count
+$ ./processor_count
 cudaDevAttrMultiProcessorCount: 2
-$ python3 cuda_memory.py
+
+$ chmod +x cuda_memory
+$ ./cuda_memory
 memory free 1049489392 .... 1000.871094 MB
 memory total 15655829504....14930.562500 MB
 memory used 13929.691406 MB
 ```
 It shows our setting are effective!
-
