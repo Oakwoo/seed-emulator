@@ -86,6 +86,7 @@ def run(dumpfile = None):
     emu.addBinding(Binding('web152', filter = Filter(nodeName = 'web', asn = 152)))
     gpuhost = as152.createHost('gpu').setGPUAccess(True, count=1, activeThread=5, memoryLimit='0=1G').joinNetwork('net0')
     gpuhost.addSoftware('python3').addSoftware('python3-pip')
+    # instead import cuda_memory.py and processor_count.py is because python file depends on torch library
     gpuhost.importFile(hostpath = os.path.dirname(os.path.realpath(__file__)) + "/cuda_memory/cuda_memory", containerpath = "/cuda_memory").importFile(hostpath = os.path.dirname(os.path.realpath(__file__)) + "/processor_count/processor_count", containerpath = "/processor_count")
      
     gpuhost2 = as152.createHost('gpu2').setGPUAccess(True, deviceIds=['0'], activeThread=15, memoryLimit='0=3G').joinNetwork('net0')
