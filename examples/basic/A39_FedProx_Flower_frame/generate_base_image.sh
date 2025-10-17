@@ -9,6 +9,12 @@ image_name=$1
 host_path=$2
 target_path=$3
 
+# check whether folder exists, avoiding nest copy
+if [ -e ${image_name} ]; then
+    echo "ERROR: The image already exists! Please remove it first."
+    exit 1
+fi
+
 # copy the template folder
 cp -r base_template ${image_name}
 
